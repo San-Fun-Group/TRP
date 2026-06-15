@@ -125,12 +125,8 @@ CREATE POLICY "bookings: reception update"
   USING     (current_user_role() IN ('reception', 'admin'))
   WITH CHECK (current_user_role() IN ('reception', 'admin'));
 
--- Housekeeping: update only — limited to cleaning_type_id in practice via the UI.
--- Column-level restriction is enforced at the application layer; RLS allows the row.
-CREATE POLICY "bookings: housekeeping update"
-  ON bookings FOR UPDATE TO authenticated
-  USING     (current_user_role() = 'housekeeping')
-  WITH CHECK (current_user_role() = 'housekeeping');
+-- Housekeeping updates are handled via the update_booking_cleaning_type()
+-- SECURITY DEFINER function (migration 007) — no broad UPDATE policy here.
 
 -- No hard deletes for any role — cancel via status only
 CREATE POLICY "bookings: no delete"
