@@ -67,13 +67,6 @@ CREATE POLICY "discounts: admin write"
   USING     (current_user_role() IN ('super_admin', 'admin'))
   WITH CHECK (current_user_role() IN ('super_admin', 'admin'));
 
--- ── booking_types ──
-DROP POLICY IF EXISTS "booking_types: admin write" ON booking_types;
-CREATE POLICY "booking_types: admin write"
-  ON booking_types FOR ALL TO authenticated
-  USING     (current_user_role() IN ('super_admin', 'admin'))
-  WITH CHECK (current_user_role() IN ('super_admin', 'admin'));
-
 -- ── bookings: insert ──
 DROP POLICY IF EXISTS "bookings: insert" ON bookings;
 CREATE POLICY "bookings: insert"

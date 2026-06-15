@@ -121,21 +121,6 @@ CREATE POLICY "discounts: reception write"
   USING (current_user_role() = 'reception')
   WITH CHECK (current_user_role() = 'reception');
 
--- =============================================================
--- booking_types
--- =============================================================
-ALTER TABLE booking_types ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "booking_types: authenticated read"
-  ON booking_types FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "booking_types: reception write"
-  ON booking_types FOR ALL
-  TO authenticated
-  USING (current_user_role() = 'reception')
-  WITH CHECK (current_user_role() = 'reception');
 
 -- =============================================================
 -- bookings

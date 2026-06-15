@@ -116,13 +116,3 @@ ON CONFLICT (id) DO UPDATE SET
   percent   = EXCLUDED.percent,
   is_active = EXCLUDED.is_active;
 
--- =============================================================
--- Booking types (3)
--- =============================================================
-
-INSERT INTO booking_types (id, name) VALUES
-  ('g1000000-0000-0000-0000-000000000001', 'normal'),
-  ('g1000000-0000-0000-0000-000000000002', 'staff'),
-  ('g1000000-0000-0000-0000-000000000003', 'VIP comp')
-ON CONFLICT (id) DO UPDATE SET
-  name = EXCLUDED.name;

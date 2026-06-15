@@ -49,11 +49,6 @@ CREATE TABLE discounts (
   is_active boolean NOT NULL DEFAULT true
 );
 
-CREATE TABLE booking_types (
-  id   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name varchar NOT NULL
-);
-
 -- =============================================================
 -- BOOKINGS TABLE
 -- =============================================================
@@ -70,8 +65,6 @@ CREATE TABLE bookings (
   doctor_id                   uuid NOT NULL REFERENCES doctors(id)        ON DELETE RESTRICT,
   cleaning_type_id            uuid          REFERENCES cleaning_types(id) ON DELETE RESTRICT,
   discount_id                 uuid          REFERENCES discounts(id)      ON DELETE RESTRICT,
-  booking_type_id             uuid NOT NULL REFERENCES booking_types(id)  ON DELETE RESTRICT,
-
   -- Guest info
   guest_name                  varchar NOT NULL,
   email                       varchar,

@@ -92,18 +92,6 @@ CREATE POLICY "discounts: admin write"
   USING     (current_user_role() = 'admin')
   WITH CHECK (current_user_role() = 'admin');
 
--- ── booking_types ──
-DROP POLICY IF EXISTS "booking_types: authenticated read" ON booking_types;
-DROP POLICY IF EXISTS "booking_types: reception write"    ON booking_types;
-
-CREATE POLICY "booking_types: read"
-  ON booking_types FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "booking_types: admin write"
-  ON booking_types FOR ALL TO authenticated
-  USING     (current_user_role() = 'admin')
-  WITH CHECK (current_user_role() = 'admin');
-
 -- ── bookings ──
 DROP POLICY IF EXISTS "bookings: authenticated read" ON bookings;
 DROP POLICY IF EXISTS "bookings: agent insert"       ON bookings;
