@@ -1,8 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const ADMIN_ROLES = new Set(['super_admin', 'admin'])
+
 function roleDashboard(role: string | undefined): string {
   switch (role) {
+    case 'super_admin':
     case 'admin':        return '/admin'
     case 'reception':    return '/reception'
     case 'housekeeping': return '/housekeeping'
@@ -58,8 +61,8 @@ export async function proxy(request: NextRequest) {
   // Never use user_metadata for authorization — it is client-writable.
   const role = user.app_metadata?.role as string | undefined
 
-  // Route guards — admin passes everything
-  if (role === 'admin') {
+  // Route guards — super_admin and admin pass all protected routes
+  if (ADMIN_ROLES.has(role ?? '')) {
     if (pathname === '/') return NextResponse.redirect(new URL('/admin', request.url))
     return supabaseResponse
   }

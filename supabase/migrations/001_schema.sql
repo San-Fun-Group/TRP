@@ -27,7 +27,7 @@ CREATE TABLE rooms (
 CREATE TABLE staff (
   id        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name      varchar NOT NULL,
-  role      varchar NOT NULL CHECK (role IN ('admin', 'agent', 'reception', 'housekeeping')),
+  role      varchar NOT NULL CHECK (role IN ('super_admin', 'admin', 'agent', 'reception', 'housekeeping')),
   is_active boolean NOT NULL DEFAULT true
 );
 
