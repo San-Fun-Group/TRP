@@ -16,12 +16,11 @@
 -- =============================================================
 
 -- Helper: extract role from JWT claims
+-- app_metadata is server-only (set via service role). user_metadata is client-writable
+-- and must never be used for authorization decisions.
 CREATE OR REPLACE FUNCTION current_user_role()
 RETURNS text LANGUAGE sql STABLE AS $$
-  SELECT coalesce(
-    auth.jwt() -> 'user_metadata' ->> 'role',
-    auth.jwt() ->> 'role'
-  );
+  SELECT auth.jwt() -> 'app_metadata' ->> 'role';
 $$;
 
 -- =============================================================

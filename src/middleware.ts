@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/login') || pathname.startsWith('/auth')) {
     // If already logged in, send to their role-based dashboard
     if (user) {
-      const role = user.user_metadata?.role as string | undefined
+      const role = user.app_metadata?.role as string | undefined
       const dest = role === 'reception' ? '/reception' : '/agent'
       return NextResponse.redirect(new URL(dest, request.url))
     }
@@ -46,7 +46,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  const role = user.user_metadata?.role as string | undefined
+  // app_metadata is server-only (set via service role). Never use user_metadata for
+  // authorization — users can write their own user_metadata via supabase.auth.updateUser().
+  const role = user.app_metadata?.role as string | undefined
 
   // Guard role-specific areas
   if (pathname.startsWith('/reception') && role !== 'reception') {
