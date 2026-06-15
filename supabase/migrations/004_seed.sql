@@ -1,25 +1,18 @@
 -- =============================================================
 -- TRP — Seed data (idempotent — safe to re-run)
--- All rows use stable UUIDs so ON CONFLICT (id) DO UPDATE
--- applies changes without duplicating or erroring.
+-- Stable UUIDs + ON CONFLICT DO UPDATE prevents duplicates.
 -- =============================================================
 
--- =============================================================
--- Room type
--- =============================================================
-
-INSERT INTO room_types (id, name, price_per_night, extra_bed_price, is_active)
-VALUES ('a1000000-0000-0000-0000-000000000001', 'Standard', 2500, 1000, true)
+-- ── Room type ─────────────────────────────────────────────────
+INSERT INTO room_types (id, name, price_per_night, extra_bed_price, is_active) VALUES
+  ('a1000000-0000-0000-0000-000000000001', 'Standard', 2500, 1000, true)
 ON CONFLICT (id) DO UPDATE SET
   name            = EXCLUDED.name,
   price_per_night = EXCLUDED.price_per_night,
   extra_bed_price = EXCLUDED.extra_bed_price,
   is_active       = EXCLUDED.is_active;
 
--- =============================================================
--- Rooms (4 rooms)
--- =============================================================
-
+-- ── Rooms ─────────────────────────────────────────────────────
 INSERT INTO rooms (id, room_type_id, name, is_active) VALUES
   ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', '401', true),
   ('b1000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', '402', true),
@@ -29,10 +22,7 @@ ON CONFLICT (id) DO UPDATE SET
   name      = EXCLUDED.name,
   is_active = EXCLUDED.is_active;
 
--- =============================================================
--- Staff (16 sales agents)
--- =============================================================
-
+-- ── Staff (16 agents) ─────────────────────────────────────────
 INSERT INTO staff (id, name, role, is_active) VALUES
   ('c1000000-0000-0000-0000-000000000001', 'กันต์สินี คุณาเกษมสิทธิ์',  'agent', true),
   ('c1000000-0000-0000-0000-000000000002', 'กุสุมา ศรีโคตร',             'agent', true),
@@ -55,10 +45,7 @@ ON CONFLICT (id) DO UPDATE SET
   role      = EXCLUDED.role,
   is_active = EXCLUDED.is_active;
 
--- =============================================================
--- Doctors (24)
--- =============================================================
-
+-- ── Doctors (24) ──────────────────────────────────────────────
 INSERT INTO doctors (id, name, is_active) VALUES
   ('d1000000-0000-0000-0000-000000000001', 'Dr. Choladhis',  true),
   ('d1000000-0000-0000-0000-000000000002', 'Dr. Suwannee',   true),
@@ -88,10 +75,7 @@ ON CONFLICT (id) DO UPDATE SET
   name      = EXCLUDED.name,
   is_active = EXCLUDED.is_active;
 
--- =============================================================
--- Cleaning types (5)
--- =============================================================
-
+-- ── Cleaning types (5) ────────────────────────────────────────
 INSERT INTO cleaning_types (id, name) VALUES
   ('e1000000-0000-0000-0000-000000000001', 'Amenity in room'),
   ('e1000000-0000-0000-0000-000000000002', 'Mini Cleaning'),
@@ -101,10 +85,7 @@ INSERT INTO cleaning_types (id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name;
 
--- =============================================================
--- Discounts (5)
--- =============================================================
-
+-- ── Discounts (5) ─────────────────────────────────────────────
 INSERT INTO discounts (id, label, percent, is_active) VALUES
   ('f1000000-0000-0000-0000-000000000001', '0%',   0,   true),
   ('f1000000-0000-0000-0000-000000000002', '5%',   5,   true),
@@ -115,4 +96,3 @@ ON CONFLICT (id) DO UPDATE SET
   label     = EXCLUDED.label,
   percent   = EXCLUDED.percent,
   is_active = EXCLUDED.is_active;
-
