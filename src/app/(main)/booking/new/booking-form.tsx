@@ -30,7 +30,8 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [step, setStep] = useState<'form' | 'confirm'>('form')
+  const [step,         setStep]         = useState<'form' | 'confirm'>('form')
+  const [confirmedKey, setConfirmedKey] = useState('')
 
   const [checkin,  setCheckin]  = useState('')
   const [checkout, setCheckout] = useState('')
@@ -61,6 +62,7 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
   const roomAvail = avail[roomTypeId]
   const isFull    = roomAvail !== undefined && roomAvail.available <= 0
 
+  const formKey    = `${checkin}|${checkout}|${roomTypeId}|${guestName}|${staffId}|${discountId}|${extraBeds}|${guestCount}|${needsCaretaker}`
   const datesValid = !!(checkin && checkout && checkout > checkin)
   const canProceed = datesValid && !availLoading && roomAvail !== undefined && !isFull
   const formReady  = canProceed && guestName.trim().length > 0
@@ -68,16 +70,20 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
   const selectedStaff = staff.find(s => s.id === staffId)
 
   useEffect(() => {
-    if (!checkin || !checkout || checkout <= checkin) { setAvail({}); return }
+    if (!checkin || !checkout || checkout <= checkin) return
+    let cancelled = false
     setAvailLoading(true)
     fetch(`/api/availability?checkin=${checkin}&checkout=${checkout}`)
-      .then(r => r.json()).then(setAvail).catch(() => setAvail({})).finally(() => setAvailLoading(false))
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setAvail(data) })
+      .catch(() => { if (!cancelled) setAvail({}) })
+      .finally(() => { if (!cancelled) setAvailLoading(false) })
+    return () => {
+      cancelled = true
+      setAvail({})
+      setAvailLoading(false)
+    }
   }, [checkin, checkout])
-
-  useEffect(() => {
-    if (step === 'confirm') setStep('form')
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkin, checkout, roomTypeId, guestName, staffId, discountId, extraBeds, guestCount, needsCaretaker])
 
   async function handleSubmit() {
     if (!roomType || nights <= 0 || isFull) return
@@ -105,7 +111,7 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
   }
 
   // ── Confirm step ─────────────────────────────────────────────
-  if (step === 'confirm') {
+  if (step === 'confirm' && formKey === confirmedKey) {
     return (
       <div className="space-y-6 fade-in">
         <div className="card p-6 space-y-3">
@@ -293,7 +299,7 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
           {/* Single gold CTA */}
           <div>
             <button type="button"
-              onClick={() => setStep('confirm')}
+              onClick={() => { setStep('confirm'); setConfirmedKey(formKey) }}
               disabled={!formReady}
               className="w-full py-3 text-sm font-medium tracking-widest uppercase text-white transition-all disabled:opacity-40 rounded-lg"
               style={{ backgroundColor: 'var(--gold)', cursor: formReady ? 'pointer' : 'not-allowed' }}
