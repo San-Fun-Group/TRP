@@ -6,13 +6,12 @@ const BOOKING_ROLES = new Set(['super_admin', 'admin', 'reception', 'agent'])
 
 // Price snapshot fields are intentionally excluded — the server re-fetches
 // authoritative values from the DB so clients cannot manipulate pricing.
+// doctor_id and cleaning_type_id are assigned post-booking by reception/housekeeping
 interface BookingPayload {
   room_type_id:    string
   staff_id:        string
-  doctor_id:       string
   booking_type_id: string
   discount_id:     string | null
-  cleaning_type_id: string | null
   guest_name:      string
   email:           string | null
   guest_count:     number

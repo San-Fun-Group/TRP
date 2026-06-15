@@ -6,19 +6,15 @@ import { createBooking } from '@/lib/actions/bookings'
 
 interface RoomType    { id: string; name: string; price_per_night: number; extra_bed_price: number }
 interface Staff       { id: string; name: string }
-interface Doctor      { id: string; name: string }
 interface Discount    { id: string; label: string; percent: number }
 interface BookingType { id: string; name: string }
-interface CleaningType{ id: string; name: string }
 interface Availability{ available: number; capacity: number }
 
 interface Props {
-  roomTypes:     RoomType[]
-  staff:         Staff[]
-  doctors:       Doctor[]
-  discounts:     Discount[]
-  bookingTypes:  BookingType[]
-  cleaningTypes: CleaningType[]
+  roomTypes:    RoomType[]
+  staff:        Staff[]
+  discounts:    Discount[]
+  bookingTypes: BookingType[]
 }
 
 function calcTotal(
@@ -31,7 +27,7 @@ function calcTotal(
   return Math.floor((pricePerNight + extraBedPrice * extraBeds) * nights * (100 - discountPct) / 100)
 }
 
-export function BookingForm({ roomTypes, staff, doctors, discounts, bookingTypes, cleaningTypes }: Props) {
+export function BookingForm({ roomTypes, staff, discounts, bookingTypes }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -52,23 +48,21 @@ export function BookingForm({ roomTypes, staff, doctors, discounts, bookingTypes
   const [email,          setEmail]          = useState('')
   const [guestCount,     setGuestCount]     = useState(1)
   const [staffId,        setStaffId]        = useState(staff[0]?.id ?? '')
-  const [doctorId,       setDoctorId]       = useState(doctors[0]?.id ?? '')
   const [bookingTypeId,  setBookingTypeId]  = useState(bookingTypes[0]?.id ?? '')
   const [discountId,     setDiscountId]     = useState(discounts.find(d => d.percent === 0)?.id ?? discounts[0]?.id ?? '')
   const [extraBeds,      setExtraBeds]      = useState(0)
   const [needsCaretaker, setNeedsCaretaker] = useState(false)
-  const [cleaningTypeId, setCleaningTypeId] = useState('')
   const [error,          setError]          = useState<string | null>(null)
   const [success,        setSuccess]        = useState(false)
 
   // Derived values
-  const nights      = checkin && checkout ? Math.max(0, (new Date(checkout).getTime() - new Date(checkin).getTime()) / 86400000) : 0
-  const discount    = discounts.find(d => d.id === discountId)
-  const total       = roomType && nights > 0
+  const nights    = checkin && checkout ? Math.max(0, (new Date(checkout).getTime() - new Date(checkin).getTime()) / 86400000) : 0
+  const discount  = discounts.find(d => d.id === discountId)
+  const total     = roomType && nights > 0
     ? calcTotal(roomType.price_per_night, roomType.extra_bed_price, extraBeds, nights, discount?.percent ?? 0)
     : 0
-  const roomAvail   = avail[roomTypeId]
-  const isFull      = roomAvail !== undefined && roomAvail.available <= 0
+  const roomAvail = avail[roomTypeId]
+  const isFull    = roomAvail !== undefined && roomAvail.available <= 0
 
   // Check availability when dates change
   useEffect(() => {
@@ -93,10 +87,8 @@ export function BookingForm({ roomTypes, staff, doctors, discounts, bookingTypes
       const result = await createBooking({
         room_type_id:    roomTypeId,
         staff_id:        staffId,
-        doctor_id:       doctorId,
         booking_type_id: bookingTypeId,
         discount_id:     discountId || null,
-        cleaning_type_id: cleaningTypeId || null,
         guest_name:      guestName,
         email:           email || null,
         guest_count:     guestCount,
@@ -197,14 +189,9 @@ export function BookingForm({ roomTypes, staff, doctors, discounts, bookingTypes
         </Field>
       </section>
 
-      {/* ── Medical / Staff ── */}
+      {/* ── Staff / Booking type ── */}
       <section className="bg-white p-5 space-y-4">
-        <SectionTitle>ข้อมูลการรักษา</SectionTitle>
-        <Field label="แพทย์ผู้ดูแล *">
-          <Select value={doctorId} onChange={setDoctorId}>
-            {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </Select>
-        </Field>
+        <SectionTitle>ข้อมูลการจอง</SectionTitle>
         <Field label="พนักงานขาย *">
           <Select value={staffId} onChange={setStaffId}>
             {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -249,12 +236,6 @@ export function BookingForm({ roomTypes, staff, doctors, discounts, bookingTypes
               </button>
             ))}
           </div>
-        </Field>
-        <Field label="การทำความสะอาด">
-          <Select value={cleaningTypeId} onChange={setCleaningTypeId}>
-            <option value="">— ไม่ระบุ —</option>
-            {cleaningTypes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </Select>
         </Field>
 
         {/* Price summary */}

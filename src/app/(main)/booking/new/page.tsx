@@ -7,17 +7,13 @@ export default async function NewBookingPage() {
   const [
     { data: roomTypes },
     { data: staff },
-    { data: doctors },
     { data: discounts },
     { data: bookingTypes },
-    { data: cleaningTypes },
   ] = await Promise.all([
     supabase.from('room_types').select('id, name, price_per_night, extra_bed_price').eq('is_active', true),
     supabase.from('staff').select('id, name').eq('is_active', true).order('name'),
-    supabase.from('doctors').select('id, name').eq('is_active', true).order('name'),
     supabase.from('discounts').select('id, label, percent').eq('is_active', true).order('percent'),
     supabase.from('booking_types').select('id, name'),
-    supabase.from('cleaning_types').select('id, name'),
   ])
 
   return (
@@ -42,10 +38,8 @@ export default async function NewBookingPage() {
       <BookingForm
         roomTypes={roomTypes ?? []}
         staff={staff ?? []}
-        doctors={doctors ?? []}
         discounts={discounts ?? []}
         bookingTypes={bookingTypes ?? []}
-        cleaningTypes={cleaningTypes ?? []}
       />
     </div>
   )
