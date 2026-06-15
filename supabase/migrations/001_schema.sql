@@ -126,3 +126,18 @@ $$;
 CREATE TRIGGER trg_bookings_updated_at
   BEFORE UPDATE ON bookings
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- =============================================================
+-- GRANTS
+-- Schema-level usage + table-level grants for the authenticated role.
+-- Without these, RLS never runs — PostgreSQL denies access first.
+-- =============================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+GRANT SELECT ON
+  room_types, rooms, staff, doctors, cleaning_types, discounts
+TO authenticated;
+
+GRANT SELECT, INSERT, UPDATE ON bookings TO authenticated;
+
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;

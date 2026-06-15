@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBooking } from '@/lib/actions/bookings'
+import { DateRangePicker } from './date-range-picker'
 
 interface RoomType    { id: string; name: string; price_per_night: number; extra_bed_price: number }
 interface Staff       { id: string; name: string }
@@ -166,20 +167,12 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
       {/* ── 1. Dates & Room Type ── */}
       <section className="card p-5 space-y-4">
         <SectionTitle step={1}>วันที่และประเภทห้อง</SectionTitle>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="เช็คอิน *">
-            <input type="date" required value={checkin}
-              min={new Date().toISOString().split('T')[0]}
-              onChange={e => { setCheckin(e.target.value); if (checkout && e.target.value >= checkout) setCheckout('') }}
-              className={inputCls} />
-          </Field>
-          <Field label="เช็คเอาท์ *">
-            <input type="date" required value={checkout}
-              min={checkin || new Date().toISOString().split('T')[0]}
-              onChange={e => setCheckout(e.target.value)}
-              className={inputCls} />
-          </Field>
-        </div>
+        <DateRangePicker
+          checkin={checkin}
+          checkout={checkout}
+          onCheckin={setCheckin}
+          onCheckout={setCheckout}
+        />
 
         {roomTypes.length > 1 && (
           <Field label="ประเภทห้อง *">
