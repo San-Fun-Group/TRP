@@ -24,7 +24,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   return (
     <div
       className={`${cormorant.variable} ${dmSans.variable} min-h-screen flex flex-col`}
-      style={{ fontFamily: 'var(--font-dm-sans, sans-serif)', backgroundColor: '#F8F4EF' }}
+      style={{ fontFamily: 'var(--font-dm-sans, sans-serif)', backgroundColor: 'var(--bg)' }}
     >
       <NavBar role={role} />
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">

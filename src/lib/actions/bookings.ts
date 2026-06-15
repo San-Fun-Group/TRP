@@ -10,7 +10,6 @@ const BOOKING_ROLES = new Set(['super_admin', 'admin', 'reception', 'agent'])
 interface BookingPayload {
   room_type_id:    string
   staff_id:        string
-  booking_type_id: string
   discount_id:     string | null
   guest_name:      string
   email:           string | null

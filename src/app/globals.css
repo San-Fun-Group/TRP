@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --primary:      #4A357A;
-  --primary-hover:#8C82B4;
-  --accent:       #C6B7E1;
+  --primary:      #6B5CA8;  /* medium purple — headings, nav text, labels */
+  --primary-hover:#8475BB;
+  --gold:         #C4A26A;  /* warm gold — CTAs, active states, luxury accents */
+  --gold-hover:   #D4B47A;
+  --gold-tint:    rgba(196,162,106,0.12);
+  --accent:       #D8CEF0;  /* soft lavender */
   --mauve:        #A78FB6;
-  --bg:           #EAE6EC;
+  --bg:           #FAFAFA;  /* near-white — calm, spacious */
   --surface:      #FFFFFF;
-  --border:       #DDDDE1;
-  --border-soft:  #D8CDDF;
-  --text:         #1C1C1C;
-  --text-muted:   #978EB9;
-  --text-light:   #C9C3D9;
+  --border:       #E8E4EF;
+  --border-soft:  #F0EDF6;
+  --text:         #2C2C2C;
+  --text-muted:   #8A7FAA;
+  --text-light:   #C4BBDB;
   --error:        #C0392B;
   --success:      #2E7D5E;
 }
@@ -42,9 +45,18 @@ body {
 }
 .fade-in { animation: fade-in 0.3s ease forwards; }
 
-/* Purple CTA — usable on server components via class (no JS handler needed) */
-.btn-primary {
-  background-color: var(--primary);
+/* Gold CTA — luxury action button (usable on server components) */
+.btn-gold {
+  background-color: var(--gold);
+  color: #fff;
+  border-radius: 8px;
   transition: background-color 0.15s;
 }
-.btn-primary:hover { background-color: var(--primary-hover); }
+.btn-gold:hover { background-color: var(--gold-hover); }
+
+/* Elevated white card — rounded + purple-tinted shadow */
+.card {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(107, 92, 168, 0.07);
+}

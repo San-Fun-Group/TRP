@@ -23,60 +23,45 @@ export function NavBar({ role }: Props) {
     pathname === path || pathname.startsWith(path + '/')
 
   return (
-    <header style={{ backgroundColor: 'var(--primary)' }}>
+    <header className="sticky top-0 z-40"
+      style={{ backgroundColor: 'var(--primary)', boxShadow: '0 2px 16px rgba(74, 53, 122, 0.18)' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
+
         {/* Logo */}
         <Link href="/home" className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 flex items-center justify-center text-xs font-bold text-white"
-            style={{ backgroundColor: 'var(--accent)' }}
-          >
+          <div className="w-7 h-7 flex items-center justify-center text-xs font-bold text-white"
+            style={{ backgroundColor: 'var(--gold)' }}>
             +
           </div>
-          <span
-            className="text-white text-sm tracking-widest uppercase hidden sm:block"
-            style={{ opacity: 0.85 }}
-          >
+          <span className="text-sm tracking-widest uppercase hidden sm:block"
+            style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
             TRP Hotel
           </span>
         </Link>
 
         {/* Nav links */}
         <nav className="flex items-center gap-1">
-          <NavLink href="/home" active={active('/home')}>หน้าหลัก</NavLink>
-
+          <NavLink href="/home"         isActive={active('/home')}>หน้าหลัก</NavLink>
           {BOOKING_ROLES.has(role ?? '') && (
-            <NavLink href="/booking/new" active={active('/booking')}>
-              IPD Booking
-            </NavLink>
+            <NavLink href="/booking/new" isActive={active('/booking')}>IPD Booking</NavLink>
           )}
-
           {(role === 'housekeeping' || ADMIN_ROLES.has(role ?? '')) && (
-            <NavLink href="/housekeeping" active={active('/housekeeping')}>
-              Housekeeping
-            </NavLink>
+            <NavLink href="/housekeeping" isActive={active('/housekeeping')}>Housekeeping</NavLink>
           )}
-
           {ADMIN_ROLES.has(role ?? '') && (
-            <NavLink href="/admin" active={active('/admin')}>
-              Admin
-            </NavLink>
+            <NavLink href="/admin" isActive={active('/admin')}>Admin</NavLink>
           )}
         </nav>
 
         {/* Role badge + sign out */}
         <div className="flex items-center gap-3">
-          <span
-            className="hidden sm:block text-xs px-2 py-0.5 font-medium"
-            style={{ backgroundColor: 'rgba(198,183,225,0.25)', color: 'var(--accent)' }}
-          >
+          <span className="hidden sm:block text-xs px-2 py-0.5 font-medium rounded-full"
+            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.65)' }}>
             {role ?? 'no role'}
           </span>
-          <button
-            onClick={signOut}
-            className="text-xs tracking-widest uppercase transition-opacity hover:opacity-70"
-            style={{ color: 'rgba(255,255,255,0.55)' }}
-          >
+          <button onClick={signOut}
+            className="text-xs tracking-widest uppercase transition-opacity hover:opacity-60"
+            style={{ color: 'rgba(255,255,255,0.45)' }}>
             ออกจากระบบ
           </button>
         </div>
@@ -85,17 +70,18 @@ export function NavBar({ role }: Props) {
   )
 }
 
-function NavLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+function NavLink({ href, isActive, children }: { href: string; isActive: boolean; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      className="px-3 py-1.5 text-sm transition-all"
+    <Link href={href} className="px-3 py-1.5 text-sm transition-all relative"
       style={{
-        color: active ? '#fff' : 'rgba(255,255,255,0.55)',
-        backgroundColor: active ? 'rgba(255,255,255,0.15)' : 'transparent',
-      }}
-    >
+        color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+        fontWeight: isActive ? 500 : 400,
+      }}>
       {children}
+      {isActive && (
+        <span className="absolute bottom-0 left-3 right-3 h-0.5"
+          style={{ backgroundColor: 'var(--gold)' }} />
+      )}
     </Link>
   )
 }
