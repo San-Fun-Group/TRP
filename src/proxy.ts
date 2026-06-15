@@ -1,18 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const ADMIN_ROLES = new Set(['super_admin', 'admin'])
-
-function roleDashboard(role: string | undefined): string {
-  switch (role) {
-    case 'super_admin':
-    case 'admin':        return '/admin'
-    case 'reception':    return '/reception'
-    case 'housekeeping': return '/housekeeping'
-    case 'agent':
-    default:             return '/agent'
-  }
-}
+const ADMIN_ROLES   = new Set(['super_admin', 'admin'])
+const BOOKING_ROLES = new Set(['super_admin', 'admin', 'reception', 'agent'])
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -45,10 +35,7 @@ export async function proxy(request: NextRequest) {
 
   // Public routes — never redirect
   if (pathname.startsWith('/login') || pathname.startsWith('/auth')) {
-    if (user) {
-      // Already logged in: send to role dashboard
-      return NextResponse.redirect(new URL(roleDashboard(user.app_metadata?.role), request.url))
-    }
+    if (user) return NextResponse.redirect(new URL('/home', request.url))
     return supabaseResponse
   }
 
@@ -61,28 +48,24 @@ export async function proxy(request: NextRequest) {
   // Never use user_metadata for authorization — it is client-writable.
   const role = user.app_metadata?.role as string | undefined
 
-  // Route guards — super_admin and admin pass all protected routes
-  if (ADMIN_ROLES.has(role ?? '')) {
-    if (pathname === '/') return NextResponse.redirect(new URL('/admin', request.url))
-    return supabaseResponse
-  }
-
-  if (pathname.startsWith('/admin')) {
-    return NextResponse.redirect(new URL(roleDashboard(role), request.url))
-  }
-  if (pathname.startsWith('/reception') && role !== 'reception') {
-    return NextResponse.redirect(new URL(roleDashboard(role), request.url))
-  }
-  if (pathname.startsWith('/agent') && role !== 'agent') {
-    return NextResponse.redirect(new URL(roleDashboard(role), request.url))
-  }
-  if (pathname.startsWith('/housekeeping') && role !== 'housekeeping') {
-    return NextResponse.redirect(new URL(roleDashboard(role), request.url))
-  }
-
-  // Root redirect
+  // Root → shared home
   if (pathname === '/') {
-    return NextResponse.redirect(new URL(roleDashboard(role), request.url))
+    return NextResponse.redirect(new URL('/home', request.url))
+  }
+
+  // /booking/* — agents, reception, admin only (not housekeeping)
+  if (pathname.startsWith('/booking') && !BOOKING_ROLES.has(role ?? '')) {
+    return NextResponse.redirect(new URL('/home', request.url))
+  }
+
+  // /admin/* — admin roles only
+  if (pathname.startsWith('/admin') && !ADMIN_ROLES.has(role ?? '')) {
+    return NextResponse.redirect(new URL('/home', request.url))
+  }
+
+  // /housekeeping/* — housekeeping + admin
+  if (pathname.startsWith('/housekeeping') && role !== 'housekeeping' && !ADMIN_ROLES.has(role ?? '')) {
+    return NextResponse.redirect(new URL('/home', request.url))
   }
 
   return supabaseResponse
