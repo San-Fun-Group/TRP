@@ -91,22 +91,19 @@ export function BookingForm({ roomTypes, staff, doctors, discounts, bookingTypes
 
     startTransition(async () => {
       const result = await createBooking({
-        room_type_id:               roomTypeId,
-        staff_id:                   staffId,
-        doctor_id:                  doctorId,
-        booking_type_id:            bookingTypeId,
-        discount_id:                discountId || null,
-        cleaning_type_id:           cleaningTypeId || null,
-        guest_name:                 guestName,
-        email:                      email || null,
-        guest_count:                guestCount,
-        checkin_date:               checkin,
-        checkout_date:              checkout,
-        extra_beds:                 extraBeds,
-        needs_caretaker:            needsCaretaker,
-        room_price_at_booking:      roomType.price_per_night,
-        extra_bed_price_at_booking: roomType.extra_bed_price,
-        discount_percent_at_booking: discount?.percent ?? 0,
+        room_type_id:    roomTypeId,
+        staff_id:        staffId,
+        doctor_id:       doctorId,
+        booking_type_id: bookingTypeId,
+        discount_id:     discountId || null,
+        cleaning_type_id: cleaningTypeId || null,
+        guest_name:      guestName,
+        email:           email || null,
+        guest_count:     guestCount,
+        checkin_date:    checkin,
+        checkout_date:   checkout,
+        extra_beds:      extraBeds,
+        needs_caretaker: needsCaretaker,
       })
 
       if (result.error) {
