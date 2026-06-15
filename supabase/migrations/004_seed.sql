@@ -1,107 +1,128 @@
 -- =============================================================
--- TRP — Seed data
+-- TRP — Seed data (idempotent — safe to re-run)
+-- All rows use stable UUIDs so ON CONFLICT (id) DO UPDATE
+-- applies changes without duplicating or erroring.
 -- =============================================================
 
 -- =============================================================
--- Room type + rooms
+-- Room type
 -- =============================================================
 
 INSERT INTO room_types (id, name, price_per_night, extra_bed_price, is_active)
-VALUES (
-  'a1000000-0000-0000-0000-000000000001',
-  'Standard',
-  2500,
-  1000,
-  true
-);
+VALUES ('a1000000-0000-0000-0000-000000000001', 'Standard', 2500, 1000, true)
+ON CONFLICT (id) DO UPDATE SET
+  name            = EXCLUDED.name,
+  price_per_night = EXCLUDED.price_per_night,
+  extra_bed_price = EXCLUDED.extra_bed_price,
+  is_active       = EXCLUDED.is_active;
+
+-- =============================================================
+-- Rooms (4 rooms)
+-- =============================================================
 
 INSERT INTO rooms (id, room_type_id, name, is_active) VALUES
   ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', '401', true),
   ('b1000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', '402', true),
   ('b1000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', '403', true),
-  ('b1000000-0000-0000-0000-000000000004', 'a1000000-0000-0000-0000-000000000001', '404', true);
+  ('b1000000-0000-0000-0000-000000000004', 'a1000000-0000-0000-0000-000000000001', '404', true)
+ON CONFLICT (id) DO UPDATE SET
+  name      = EXCLUDED.name,
+  is_active = EXCLUDED.is_active;
 
 -- =============================================================
 -- Staff (16 sales agents)
--- TODO: The Thai names in the PRD had a mojibake encoding issue.
---       Replace each placeholder below with the correct full name.
 -- =============================================================
 
-INSERT INTO staff (name, role, is_active) VALUES
-  ('กันต์สินี คุณาเกษมสิทธิ์',  'agent', true),
-  ('กุสุมา ศรีโคตร',             'agent', true),
-  ('จิตรฤทัย ปั้นเกตุ',          'agent', true),
-  ('จิรนันท์ ฉัตรรุ่งมณีชัย',    'agent', true),
-  ('ธีรวัฒน์ เพชรดี',            'agent', true),
-  ('ปณชัย เชยอุบล',              'agent', true),
-  ('ภีรภัทร แซ่ตั้ง',            'agent', true),
-  ('ริญญลักษมิ์ เพชรดี',         'agent', true),
-  ('ศิริพร ฮู้คี้',              'agent', true),
-  ('ศุภวรรณ จั่นเพชร',           'agent', true),
-  ('สริญณุษ ดอนทองแดง',          'agent', true),
-  ('สุธาทิพย์ มีพรบูชา',         'agent', true),
-  ('สุภาภรณ์ แดงเทศ',            'agent', true),
-  ('อรุณเพ็ญ เจิมจันทึก',        'agent', true),
-  ('อารยา จันทร์ต๊ะ',            'agent', true),
-  ('อารียา จันทร์สำเภา',         'agent', true);
+INSERT INTO staff (id, name, role, is_active) VALUES
+  ('c1000000-0000-0000-0000-000000000001', 'กันต์สินี คุณาเกษมสิทธิ์',  'agent', true),
+  ('c1000000-0000-0000-0000-000000000002', 'กุสุมา ศรีโคตร',             'agent', true),
+  ('c1000000-0000-0000-0000-000000000003', 'จิตรฤทัย ปั้นเกตุ',          'agent', true),
+  ('c1000000-0000-0000-0000-000000000004', 'จิรนันท์ ฉัตรรุ่งมณีชัย',    'agent', true),
+  ('c1000000-0000-0000-0000-000000000005', 'ธีรวัฒน์ เพชรดี',            'agent', true),
+  ('c1000000-0000-0000-0000-000000000006', 'ปณชัย เชยอุบล',              'agent', true),
+  ('c1000000-0000-0000-0000-000000000007', 'ภีรภัทร แซ่ตั้ง',            'agent', true),
+  ('c1000000-0000-0000-0000-000000000008', 'ริญญลักษมิ์ เพชรดี',         'agent', true),
+  ('c1000000-0000-0000-0000-000000000009', 'ศิริพร ฮู้คี้',              'agent', true),
+  ('c1000000-0000-0000-0000-000000000010', 'ศุภวรรณ จั่นเพชร',           'agent', true),
+  ('c1000000-0000-0000-0000-000000000011', 'สริญณุษ ดอนทองแดง',          'agent', true),
+  ('c1000000-0000-0000-0000-000000000012', 'สุธาทิพย์ มีพรบูชา',         'agent', true),
+  ('c1000000-0000-0000-0000-000000000013', 'สุภาภรณ์ แดงเทศ',            'agent', true),
+  ('c1000000-0000-0000-0000-000000000014', 'อรุณเพ็ญ เจิมจันทึก',        'agent', true),
+  ('c1000000-0000-0000-0000-000000000015', 'อารยา จันทร์ต๊ะ',            'agent', true),
+  ('c1000000-0000-0000-0000-000000000016', 'อารียา จันทร์สำเภา',         'agent', true)
+ON CONFLICT (id) DO UPDATE SET
+  name      = EXCLUDED.name,
+  role      = EXCLUDED.role,
+  is_active = EXCLUDED.is_active;
 
 -- =============================================================
 -- Doctors (24)
 -- =============================================================
 
-INSERT INTO doctors (name, is_active) VALUES
-  ('Dr. Choladhis',  true),
-  ('Dr. Suwannee',   true),
-  ('Dr. Chaiyot',    true),
-  ('Dr. Boat',       true),
-  ('Dr. Nutty',      true),
-  ('Dr. Ann 1',      true),
-  ('Dr. Khanti',     true),
-  ('Dr. Aom',        true),
-  ('Dr. Nui',        true),
-  ('Dr. Wan',        true),
-  ('Dr. Sombat',     true),
-  ('Dr. Am',         true),
-  ('Dr. Thank',      true),
-  ('Dr. Pim',        true),
-  ('Dr. Joule',      true),
-  ('Dr. Prok',       true),
-  ('Dr. Book',       true),
-  ('Dr. Kie',        true),
-  ('Dr. Ann 2',      true),
-  ('หมอแมน',         true),
-  ('หมอหมิว',        true),
-  ('อจ.หมอหน่อย',   true),
-  ('Dr. Boss',       true),
-  ('Dr. Mind',       true);
+INSERT INTO doctors (id, name, is_active) VALUES
+  ('d1000000-0000-0000-0000-000000000001', 'Dr. Choladhis',  true),
+  ('d1000000-0000-0000-0000-000000000002', 'Dr. Suwannee',   true),
+  ('d1000000-0000-0000-0000-000000000003', 'Dr. Chaiyot',    true),
+  ('d1000000-0000-0000-0000-000000000004', 'Dr. Boat',       true),
+  ('d1000000-0000-0000-0000-000000000005', 'Dr. Nutty',      true),
+  ('d1000000-0000-0000-0000-000000000006', 'Dr. Ann 1',      true),
+  ('d1000000-0000-0000-0000-000000000007', 'Dr. Khanti',     true),
+  ('d1000000-0000-0000-0000-000000000008', 'Dr. Aom',        true),
+  ('d1000000-0000-0000-0000-000000000009', 'Dr. Nui',        true),
+  ('d1000000-0000-0000-0000-000000000010', 'Dr. Wan',        true),
+  ('d1000000-0000-0000-0000-000000000011', 'Dr. Sombat',     true),
+  ('d1000000-0000-0000-0000-000000000012', 'Dr. Am',         true),
+  ('d1000000-0000-0000-0000-000000000013', 'Dr. Thank',      true),
+  ('d1000000-0000-0000-0000-000000000014', 'Dr. Pim',        true),
+  ('d1000000-0000-0000-0000-000000000015', 'Dr. Joule',      true),
+  ('d1000000-0000-0000-0000-000000000016', 'Dr. Prok',       true),
+  ('d1000000-0000-0000-0000-000000000017', 'Dr. Book',       true),
+  ('d1000000-0000-0000-0000-000000000018', 'Dr. Kie',        true),
+  ('d1000000-0000-0000-0000-000000000019', 'Dr. Ann 2',      true),
+  ('d1000000-0000-0000-0000-000000000020', 'หมอแมน',         true),
+  ('d1000000-0000-0000-0000-000000000021', 'หมอหมิว',        true),
+  ('d1000000-0000-0000-0000-000000000022', 'อจ.หมอหน่อย',   true),
+  ('d1000000-0000-0000-0000-000000000023', 'Dr. Boss',       true),
+  ('d1000000-0000-0000-0000-000000000024', 'Dr. Mind',       true)
+ON CONFLICT (id) DO UPDATE SET
+  name      = EXCLUDED.name,
+  is_active = EXCLUDED.is_active;
 
 -- =============================================================
 -- Cleaning types (5)
 -- =============================================================
 
-INSERT INTO cleaning_types (name) VALUES
-  ('Amenity in room'),
-  ('Mini Cleaning'),
-  ('Full Cleaning'),
-  ('Cleaned'),
-  ('Out of order');
+INSERT INTO cleaning_types (id, name) VALUES
+  ('e1000000-0000-0000-0000-000000000001', 'Amenity in room'),
+  ('e1000000-0000-0000-0000-000000000002', 'Mini Cleaning'),
+  ('e1000000-0000-0000-0000-000000000003', 'Full Cleaning'),
+  ('e1000000-0000-0000-0000-000000000004', 'Cleaned'),
+  ('e1000000-0000-0000-0000-000000000005', 'Out of order')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name;
 
 -- =============================================================
 -- Discounts (5)
 -- =============================================================
 
-INSERT INTO discounts (label, percent, is_active) VALUES
-  ('0%',   0,   true),
-  ('5%',   5,   true),
-  ('10%',  10,  true),
-  ('20%',  20,  true),
-  ('100%', 100, true);
+INSERT INTO discounts (id, label, percent, is_active) VALUES
+  ('f1000000-0000-0000-0000-000000000001', '0%',   0,   true),
+  ('f1000000-0000-0000-0000-000000000002', '5%',   5,   true),
+  ('f1000000-0000-0000-0000-000000000003', '10%',  10,  true),
+  ('f1000000-0000-0000-0000-000000000004', '20%',  20,  true),
+  ('f1000000-0000-0000-0000-000000000005', '100%', 100, true)
+ON CONFLICT (id) DO UPDATE SET
+  label     = EXCLUDED.label,
+  percent   = EXCLUDED.percent,
+  is_active = EXCLUDED.is_active;
 
 -- =============================================================
--- Booking types (3) — confirm exact values with the team (PRD §13 item 1)
+-- Booking types (3)
 -- =============================================================
 
-INSERT INTO booking_types (name) VALUES
-  ('normal'),
-  ('staff'),
-  ('VIP comp');
+INSERT INTO booking_types (id, name) VALUES
+  ('g1000000-0000-0000-0000-000000000001', 'normal'),
+  ('g1000000-0000-0000-0000-000000000002', 'staff'),
+  ('g1000000-0000-0000-0000-000000000003', 'VIP comp')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name;
