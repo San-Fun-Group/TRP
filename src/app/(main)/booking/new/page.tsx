@@ -25,12 +25,12 @@ export default async function NewBookingPage() {
             fontFamily: 'var(--font-cormorant, serif)',
             fontSize: '2rem',
             fontWeight: 400,
-            color: '#1A3A47',
+            color: 'var(--primary)',
           }}
         >
           จอง IPD
         </h1>
-        <p className="text-sm" style={{ color: '#999' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           New IPD Hotel Reservation
         </p>
       </div>

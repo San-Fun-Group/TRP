@@ -1,20 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F8F4EF;
-  --foreground: #1C1C1C;
-  --teal: #1A3A47;
-  --gold: #C4A26A;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --primary:      #4A357A;
+  --primary-hover:#8C82B4;
+  --accent:       #C6B7E1;
+  --mauve:        #A78FB6;
+  --bg:           #EAE6EC;
+  --surface:      #FFFFFF;
+  --border:       #DDDDE1;
+  --border-soft:  #D8CDDF;
+  --text:         #1C1C1C;
+  --text-muted:   #978EB9;
+  --text-light:   #C9C3D9;
+  --error:        #C0392B;
+  --success:      #2E7D5E;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
 }
 
 @keyframes shake {
@@ -24,16 +28,23 @@ body {
   60%       { transform: translateX(-4px); }
   80%       { transform: translateX(4px); }
 }
-
-.shake {
-  animation: shake 0.4s ease;
-}
+.shake { animation: shake 0.4s ease; }
 
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+.fade-up { animation: fade-up 0.5s ease forwards; }
 
-.fade-up {
-  animation: fade-up 0.5s ease forwards;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
+.fade-in { animation: fade-in 0.3s ease forwards; }
+
+/* Purple CTA — usable on server components via class (no JS handler needed) */
+.btn-primary {
+  background-color: var(--primary);
+  transition: background-color 0.15s;
+}
+.btn-primary:hover { background-color: var(--primary-hover); }

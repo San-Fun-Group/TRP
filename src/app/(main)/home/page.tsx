@@ -9,17 +9,24 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  new:          '#C4A26A',
-  confirmed:    '#2E7D5E',
+  new:          'var(--mauve)',
+  confirmed:    'var(--success)',
   checked_out:  '#888',
-  cancelled:    '#C0392B',
+  cancelled:    'var(--error)',
+}
+
+function thaiDate(d: string) {
+  return new Date(d + 'T12:00:00Z').toLocaleDateString('th-TH', {
+    day: 'numeric', month: 'short', year: '2-digit',
+  })
 }
 
 export default async function HomePage() {
   const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
 
-  // Rooms occupied today
+  // Bangkok date (avoids UTC vs local date mismatch)
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
+
   const { data: roomTypes } = await supabase
     .from('room_types')
     .select('id, name, price_per_night')
@@ -37,7 +44,6 @@ export default async function HomePage() {
     .lte('checkin_date', today)
     .gt('checkout_date', today)
 
-  // Recent 10 bookings
   const { data: recentBookings } = await supabase
     .from('bookings')
     .select(`
@@ -53,6 +59,8 @@ export default async function HomePage() {
   const occupied  = occupiedToday ?? 0
   const available = capacity - occupied
 
+  void roomTypes // suppress unused warning
+
   return (
     <div className="space-y-8">
       {/* Page heading */}
@@ -63,30 +71,31 @@ export default async function HomePage() {
             fontFamily: 'var(--font-cormorant, serif)',
             fontSize: '2rem',
             fontWeight: 400,
-            color: '#1A3A47',
+            color: 'var(--primary)',
           }}
         >
           หน้าหลัก
         </h1>
-        <p className="text-sm" style={{ color: '#999' }}>
-          {new Date().toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          {new Date().toLocaleDateString('th-TH', {
+            timeZone: 'Asia/Bangkok',
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          })}
         </p>
       </div>
 
       {/* Occupancy cards */}
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="ห้องทั้งหมด"   value={capacity}  color="#1A3A47" />
-        <StatCard label="มีผู้เข้าพัก"  value={occupied}  color="#C0392B" />
-        <StatCard label="ว่างวันนี้"    value={available} color="#2E7D5E" />
+        <StatCard label="ห้องทั้งหมด"  value={capacity}  color="var(--primary)" />
+        <StatCard label="มีผู้เข้าพัก" value={occupied}  color="var(--error)" />
+        <StatCard label="ว่างวันนี้"   value={available} color="var(--success)" />
       </div>
 
       {/* Quick action */}
-      <div className="flex items-center gap-3">
+      <div>
         <Link
           href="/booking/new"
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium tracking-widest uppercase text-white transition-colors"
-          style={{ backgroundColor: '#1A3A47' }}
-          onMouseEnter={undefined}
+          className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium tracking-widest uppercase text-white"
         >
           <span>+ จอง IPD</span>
         </Link>
@@ -96,76 +105,96 @@ export default async function HomePage() {
       <section>
         <h2
           className="mb-4 text-xs font-medium tracking-widest uppercase"
-          style={{ color: '#999' }}
+          style={{ color: 'var(--text-muted)' }}
         >
           การจองล่าสุด
         </h2>
 
         {!recentBookings?.length ? (
-          <p className="text-sm" style={{ color: '#bbb' }}>ยังไม่มีการจอง</p>
+          <p className="text-sm" style={{ color: 'var(--text-light)' }}>ยังไม่มีการจอง</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid #E8E3DB' }}>
-                  {['ชื่อผู้เข้าพัก', 'เช็คอิน', 'เช็คเอาท์', 'คืน', 'ห้อง', 'ราคารวม', 'สถานะ', 'ชำระเงิน'].map(h => (
-                    <th
-                      key={h}
-                      className="text-left pb-2 pr-6 font-medium text-xs tracking-wide"
-                      style={{ color: '#AAA' }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentBookings.map(b => (
-                  <tr
-                    key={b.id}
-                    style={{ borderBottom: '1px solid #F0EBE3' }}
-                    className="hover:bg-white transition-colors"
-                  >
-                    <td className="py-3 pr-6 font-medium" style={{ color: '#1A3A47' }}>
-                      {b.guest_name}
-                    </td>
-                    <td className="py-3 pr-6" style={{ color: '#555' }}>{b.checkin_date}</td>
-                    <td className="py-3 pr-6" style={{ color: '#555' }}>{b.checkout_date}</td>
-                    <td className="py-3 pr-6" style={{ color: '#555' }}>{b.nights}</td>
-                    <td className="py-3 pr-6" style={{ color: '#555' }}>
-                      {/* @ts-expect-error supabase nested type */}
-                      {b.rooms?.name ?? (b.room_types as { name: string } | null)?.name ?? '—'}
-                    </td>
-                    <td className="py-3 pr-6 font-medium" style={{ color: '#1A3A47' }}>
-                      {b.total_price?.toLocaleString()} ฿
-                    </td>
-                    <td className="py-3 pr-6">
-                      <span
-                        className="text-xs px-2 py-0.5 font-medium"
-                        style={{
-                          backgroundColor: `${STATUS_COLOR[b.status] ?? '#888'}18`,
-                          color: STATUS_COLOR[b.status] ?? '#888',
-                        }}
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    {['ชื่อผู้เข้าพัก', 'เช็คอิน', 'เช็คเอาท์', 'คืน', 'ห้อง', 'ราคารวม', 'สถานะ', 'ชำระเงิน'].map(h => (
+                      <th
+                        key={h}
+                        className="text-left pb-2 pr-6 font-medium text-xs tracking-wide"
+                        style={{ color: 'var(--text-light)' }}
                       >
-                        {STATUS_LABEL[b.status] ?? b.status}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className="text-xs px-2 py-0.5"
-                        style={{
-                          backgroundColor: b.payment_status === 'paid' ? '#2E7D5E18' : '#88888818',
-                          color: b.payment_status === 'paid' ? '#2E7D5E' : '#888',
-                        }}
-                      >
-                        {b.payment_status === 'paid' ? 'ชำระแล้ว' : 'รอชำระ'}
-                      </span>
-                    </td>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {recentBookings.map(b => {
+                    const roomName = (b.rooms as unknown as { name: string } | null)?.name
+                      ?? (b.room_types as unknown as { name: string } | null)?.name
+                      ?? '—'
+                    return (
+                      <tr
+                        key={b.id}
+                        style={{ borderBottom: '1px solid var(--border-soft)' }}
+                        className="hover:bg-white transition-colors"
+                      >
+                        <td className="py-3 pr-6 font-medium" style={{ color: 'var(--primary)' }}>
+                          {b.guest_name}
+                        </td>
+                        <td className="py-3 pr-6" style={{ color: 'var(--text)' }}>{thaiDate(b.checkin_date)}</td>
+                        <td className="py-3 pr-6" style={{ color: 'var(--text)' }}>{thaiDate(b.checkout_date)}</td>
+                        <td className="py-3 pr-6" style={{ color: 'var(--text-muted)' }}>{b.nights}</td>
+                        <td className="py-3 pr-6" style={{ color: 'var(--text)' }}>{roomName}</td>
+                        <td className="py-3 pr-6 font-medium" style={{ color: 'var(--primary)' }}>
+                          {b.total_price?.toLocaleString()} ฿
+                        </td>
+                        <td className="py-3 pr-6">
+                          <StatusBadge status={b.status} />
+                        </td>
+                        <td className="py-3">
+                          <PayBadge paid={b.payment_status === 'paid'} />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {recentBookings.map(b => {
+                const roomName = (b.rooms as unknown as { name: string } | null)?.name
+                  ?? (b.room_types as unknown as { name: string } | null)?.name
+                  ?? '—'
+                return (
+                  <div key={b.id} className="bg-white p-4 space-y-2"
+                    style={{ borderLeft: `3px solid ${STATUS_COLOR[b.status] ?? '#888'}` }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-medium text-sm" style={{ color: 'var(--primary)' }}>
+                        {b.guest_name}
+                      </span>
+                      <StatusBadge status={b.status} />
+                    </div>
+                    <div className="text-xs flex flex-wrap gap-x-4 gap-y-1" style={{ color: 'var(--text-muted)' }}>
+                      <span>{thaiDate(b.checkin_date)} – {thaiDate(b.checkout_date)}</span>
+                      <span>{b.nights} คืน</span>
+                      <span>ห้อง {roomName}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium" style={{ color: 'var(--primary)' }}>
+                        {b.total_price?.toLocaleString()} ฿
+                      </span>
+                      <PayBadge paid={b.payment_status === 'paid'} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
       </section>
     </div>
@@ -181,7 +210,35 @@ function StatCard({ label, value, color }: { label: string; value: number; color
       >
         {value}
       </div>
-      <div className="text-xs tracking-wide" style={{ color: '#999' }}>{label}</div>
+      <div className="text-xs tracking-wide" style={{ color: 'var(--text-muted)' }}>{label}</div>
     </div>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className="text-xs px-2 py-0.5 font-medium whitespace-nowrap"
+      style={{
+        backgroundColor: `${STATUS_COLOR[status] ?? '#888'}1A`,
+        color: STATUS_COLOR[status] ?? '#888',
+      }}
+    >
+      {STATUS_LABEL[status] ?? status}
+    </span>
+  )
+}
+
+function PayBadge({ paid }: { paid: boolean }) {
+  return (
+    <span
+      className="text-xs px-2 py-0.5 whitespace-nowrap"
+      style={{
+        backgroundColor: paid ? '#2E7D5E1A' : '#8888881A',
+        color: paid ? 'var(--success)' : '#888',
+      }}
+    >
+      {paid ? 'ชำระแล้ว' : 'รอชำระ'}
+    </span>
   )
 }
