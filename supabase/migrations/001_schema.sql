@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- LOOKUP TABLES
 -- =============================================================
 
-CREATE TABLE room_types (
+CREATE TABLE IF NOT EXISTS room_types (
   id              uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   name            varchar NOT NULL,
   price_per_night int     NOT NULL CHECK (price_per_night >= 0),
@@ -16,32 +16,32 @@ CREATE TABLE room_types (
   is_active       boolean NOT NULL DEFAULT true
 );
 
-CREATE TABLE rooms (
+CREATE TABLE IF NOT EXISTS rooms (
   id           uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   room_type_id uuid    NOT NULL REFERENCES room_types(id) ON DELETE RESTRICT,
   name         varchar NOT NULL,
   is_active    boolean NOT NULL DEFAULT true
 );
 
-CREATE TABLE staff (
+CREATE TABLE IF NOT EXISTS staff (
   id        uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   name      varchar NOT NULL,
   role      varchar NOT NULL CHECK (role IN ('super_admin', 'admin', 'agent', 'reception', 'housekeeping')),
   is_active boolean NOT NULL DEFAULT true
 );
 
-CREATE TABLE doctors (
+CREATE TABLE IF NOT EXISTS doctors (
   id        uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   name      varchar NOT NULL,
   is_active boolean NOT NULL DEFAULT true
 );
 
-CREATE TABLE cleaning_types (
+CREATE TABLE IF NOT EXISTS cleaning_types (
   id   uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   name varchar NOT NULL
 );
 
-CREATE TABLE discounts (
+CREATE TABLE IF NOT EXISTS discounts (
   id        uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   label     varchar NOT NULL,
   percent   int     NOT NULL CHECK (percent IN (0, 5, 10, 20, 100)),
@@ -52,7 +52,7 @@ CREATE TABLE discounts (
 -- BOOKINGS TABLE
 -- =============================================================
 
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS bookings (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Room (type at booking; physical room assigned at check-in)
@@ -110,7 +110,7 @@ CREATE TABLE bookings (
   CONSTRAINT checkout_after_checkin CHECK (checkout_date > checkin_date)
 );
 
-CREATE INDEX idx_bookings_room_type_dates
+CREATE INDEX IF NOT EXISTS idx_bookings_room_type_dates
   ON bookings (room_type_id, checkin_date, checkout_date)
   WHERE status != 'cancelled';
 
@@ -123,6 +123,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_bookings_updated_at ON bookings;
 CREATE TRIGGER trg_bookings_updated_at
   BEFORE UPDATE ON bookings
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();

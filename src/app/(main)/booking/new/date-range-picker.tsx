@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 
 interface Props {
   checkin:    string
@@ -30,6 +30,8 @@ function bangkokToday() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
 }
 
+interface DayAvail { available: number; capacity: number }
+
 // ── component ────────────────────────────────────────────────────
 
 export function DateRangePicker({ checkin, checkout, onCheckin, onCheckout }: Props) {
@@ -38,7 +40,31 @@ export function DateRangePicker({ checkin, checkout, onCheckin, onCheckout }: Pr
   const [mode,     setMode]     = useState<'start' | 'end'>('start')
   const [hover,    setHover]    = useState('')
   const [offset,   setOffset]   = useState(0)
+  const [dayAvail, setDayAvail] = useState<Record<string, DayAvail>>({})
   const ref = useRef<HTMLDivElement>(null)
+
+  // Month pages
+  const months = useMemo(() => {
+    const base = new Date()
+    return [0, 1].map(i => {
+      const d = new Date(base.getFullYear(), base.getMonth() + offset + i, 1)
+      return { year: d.getFullYear(), month: d.getMonth() }
+    })
+  }, [offset])
+
+  // Fetch per-day availability for the two visible months whenever they change
+  useEffect(() => {
+    if (!open) return
+    const from = ymd(months[0].year, months[0].month, 1)
+    const lastMonthDays = new Date(months[1].year, months[1].month + 1, 0).getDate()
+    const to = ymd(months[1].year, months[1].month, lastMonthDays)
+    let cancelled = false
+    fetch(`/api/availability/calendar?from=${from}&to=${to}`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled && !data.error) setDayAvail(data) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [open, months])
 
   // Close on outside click
   useEffect(() => {
@@ -97,13 +123,6 @@ export function DateRangePicker({ checkin, checkout, onCheckin, onCheckout }: Pr
     if (date > lo && date < hi) return C
     return 'transparent'
   }
-
-  // Month pages
-  const base   = new Date()
-  const months = [0, 1].map(i => {
-    const d = new Date(base.getFullYear(), base.getMonth() + offset + i, 1)
-    return { year: d.getFullYear(), month: d.getMonth() }
-  })
 
   // Trigger labels
   const checkinLabel  = checkin  ? fmt(checkin)  : 'เพิ่มวันที่'
@@ -202,10 +221,18 @@ export function DateRangePicker({ checkin, checkout, onCheckin, onCheckout }: Pr
                       const isEnd   = date === checkout
                       const isHover = date === hover && !past && !isStart && !isEnd
                       const selected = isStart || isEnd
+                      const avail   = dayAvail[date]
+                      // Occupancy reflects rooms occupied *starting* this date — only
+                      // relevant when picking a check-in. A checkout date never consumes
+                      // that night's capacity, so it should never show as unavailable.
+                      const isFull  = mode === 'start' && !past && avail !== undefined && avail.available <= 0
 
                       return (
-                        <div key={i} className="relative flex items-center justify-center"
-                          style={{ height: 34, background: rangeBg(date) }}>
+                        <div key={i} className="relative flex flex-col items-center justify-start"
+                          style={{
+                            height: 44, paddingTop: 3, borderRadius: 6,
+                            background: isFull ? 'var(--bg)' : rangeBg(date),
+                          }}>
                           <button
                             type="button"
                             disabled={past}
@@ -227,6 +254,14 @@ export function DateRangePicker({ checkin, checkout, onCheckin, onCheckout }: Pr
                             }}>
                             {day}
                           </button>
+                          {!past && avail !== undefined && (
+                            <span style={{
+                              fontSize: 9, lineHeight: 1, marginTop: 2,
+                              color: isFull ? 'var(--text-light)' : selected ? 'var(--primary)' : 'var(--text-muted)',
+                            }}>
+                              {isFull ? 'เต็ม' : avail.available}
+                            </span>
+                          )}
                         </div>
                       )
                     })}
