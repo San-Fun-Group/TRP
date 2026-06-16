@@ -49,7 +49,13 @@ export function NavBar({ role }: Props) {
             <NavLink href="/housekeeping" isActive={active('/housekeeping')}>Housekeeping</NavLink>
           )}
           {ADMIN_ROLES.has(role ?? '') && (
-            <NavLink href="/admin" isActive={active('/admin')}>Admin</NavLink>
+            <NavLink href="/admin" isActive={active('/admin') && !active('/admin/settings') && !active('/admin/users')}>Admin</NavLink>
+          )}
+          {ADMIN_ROLES.has(role ?? '') && (
+            <NavLink href="/admin/settings" isActive={active('/admin/settings')}>ตั้งค่า</NavLink>
+          )}
+          {ADMIN_ROLES.has(role ?? '') && (
+            <NavLink href="/admin/users" isActive={active('/admin/users')}>ผู้ใช้งาน</NavLink>
           )}
         </nav>
 

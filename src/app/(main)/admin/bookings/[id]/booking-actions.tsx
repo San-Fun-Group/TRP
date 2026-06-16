@@ -4,6 +4,7 @@ import { useTransition, useState } from 'react'
 import {
   updateBookingStatus,
   updatePaymentStatus,
+  updateGuestInfo,
   assignRoom,
   assignDoctor,
   type BookingStatus,
@@ -27,17 +28,23 @@ interface Room   { id: string; name: string }
 interface Doctor { id: string; name: string }
 
 interface Props {
-  bookingId:          string
-  status:             BookingStatus
-  paymentStatus:      PaymentStatus
-  roomId:             string | null
-  doctorId:           string
-  rooms:              Room[]
-  doctors:            Doctor[]
+  bookingId:      string
+  status:         BookingStatus
+  paymentStatus:  PaymentStatus
+  roomId:         string | null
+  doctorId:       string
+  rooms:          Room[]
+  doctors:        Doctor[]
+  guestName:      string
+  email:          string | null
+  guestCount:     number
+  extraBeds:      number
+  needsCaretaker: boolean
 }
 
 export function BookingActions({
   bookingId, status, paymentStatus, roomId, doctorId, rooms, doctors,
+  guestName, email, guestCount, extraBeds, needsCaretaker,
 }: Props) {
   const [isPending, startTransition] = useTransition()
   const [error, setError]            = useState<string | null>(null)
@@ -45,11 +52,33 @@ export function BookingActions({
   const [selectedRoom,   setSelectedRoom]   = useState(roomId ?? '')
   const [selectedDoctor, setSelectedDoctor] = useState(doctorId)
 
+  // Guest info edit state
+  const [editingGuest, setEditingGuest] = useState(false)
+  const [editName,     setEditName]     = useState(guestName)
+  const [editEmail,    setEditEmail]    = useState(email ?? '')
+  const [editCount,    setEditCount]    = useState(guestCount)
+  const [editBeds,     setEditBeds]     = useState(extraBeds)
+  const [editCaretaker, setEditCaretaker] = useState(needsCaretaker)
+
   function act(fn: () => Promise<{ error: string | null }>) {
     setError(null)
     startTransition(async () => {
       const res = await fn()
       if (res.error) setError(res.error)
+    })
+  }
+
+  function saveGuestInfo() {
+    act(async () => {
+      const res = await updateGuestInfo(bookingId, {
+        guest_name:      editName.trim(),
+        email:           editEmail.trim() || null,
+        guest_count:     editCount,
+        extra_beds:      editBeds,
+        needs_caretaker: editCaretaker,
+      })
+      if (!res.error) setEditingGuest(false)
+      return res
     })
   }
 
@@ -62,6 +91,104 @@ export function BookingActions({
           {error}
         </p>
       )}
+
+      {/* Guest info edit */}
+      <Section title="ข้อมูลผู้เข้าพัก">
+        {editingGuest ? (
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-xs mb-1 block" style={{ color: 'var(--text-light)' }}>ชื่อผู้เข้าพัก</span>
+              <input
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                className="w-full text-sm px-3 py-2 rounded"
+                style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs mb-1 block" style={{ color: 'var(--text-light)' }}>อีเมล</span>
+              <input
+                value={editEmail}
+                onChange={e => setEditEmail(e.target.value)}
+                type="email"
+                className="w-full text-sm px-3 py-2 rounded"
+                style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }}
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs mb-1 block" style={{ color: 'var(--text-light)' }}>จำนวนผู้เข้าพัก</span>
+                <select
+                  value={editCount}
+                  onChange={e => setEditCount(Number(e.target.value))}
+                  className="w-full text-sm px-3 py-2 rounded"
+                  style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }}
+                >
+                  {[1, 2, 3].map(n => <option key={n} value={n}>{n} ท่าน</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs mb-1 block" style={{ color: 'var(--text-light)' }}>เตียงเสริม</span>
+                <select
+                  value={editBeds}
+                  onChange={e => setEditBeds(Number(e.target.value))}
+                  className="w-full text-sm px-3 py-2 rounded"
+                  style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }}
+                >
+                  <option value={0}>ไม่มี</option>
+                  <option value={1}>1 เตียง</option>
+                  <option value={2}>2 เตียง</option>
+                </select>
+              </label>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editCaretaker}
+                onChange={e => setEditCaretaker(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm" style={{ color: 'var(--text)' }}>ต้องการผู้ดูแล</span>
+            </label>
+            <div className="flex gap-2 pt-1">
+              <button
+                disabled={isPending || !editName.trim()}
+                onClick={saveGuestInfo}
+                className="text-xs px-4 py-1.5 rounded font-medium transition-opacity disabled:opacity-40"
+                style={{ backgroundColor: 'var(--primary)', color: '#fff' }}
+              >
+                บันทึก
+              </button>
+              <button
+                onClick={() => { setEditingGuest(false); setEditName(guestName); setEditEmail(email ?? ''); setEditCount(guestCount); setEditBeds(extraBeds); setEditCaretaker(needsCaretaker) }}
+                className="text-xs px-4 py-1.5 rounded font-medium"
+                style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-sm space-y-1" style={{ color: 'var(--text)' }}>
+              <p className="font-medium">{guestName}</p>
+              {email && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{email}</p>}
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {guestCount} ท่าน{extraBeds > 0 ? ` · เตียงเสริม ${extraBeds}` : ''}{needsCaretaker ? ' · มีผู้ดูแล' : ''}
+              </p>
+            </div>
+            {!isClosed && (
+              <button
+                onClick={() => setEditingGuest(true)}
+                className="text-xs px-3 py-1 rounded shrink-0"
+                style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+              >
+                แก้ไข
+              </button>
+            )}
+          </div>
+        )}
+      </Section>
 
       {/* Status */}
       <Section title="สถานะการจอง">
@@ -84,7 +211,7 @@ export function BookingActions({
             {status === 'confirmed' && (
               <ActionBtn
                 label="เช็คเอาท์"
-                color="var(--gold)"
+                color="#C4A26A"
                 disabled={isPending}
                 onClick={() => act(() => updateBookingStatus(bookingId, 'checked_out'))}
               />

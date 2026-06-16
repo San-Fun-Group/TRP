@@ -83,12 +83,43 @@ export async function updateBookingStatus(
   const role = user.app_metadata?.role as string | undefined
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
+  // Reset cleaning status when guest checks out so housekeeping knows the room needs cleaning
+  const patch: Record<string, unknown> = { status, updated_by: null }
+  if (status === 'checked_out') patch.cleaning_type_id = null
+
   const { error } = await supabase.from('bookings')
-    .update({ status, updated_by: null })
+    .update(patch)
     .eq('id', id)
 
   if (error) return { error: error.message }
   revalidatePath('/admin')
+  revalidatePath('/admin/bookings')
+  revalidatePath(`/admin/bookings/${id}`)
+  revalidatePath('/housekeeping')
+  return { error: null }
+}
+
+export async function updateGuestInfo(
+  id: string,
+  data: {
+    guest_name: string
+    email: string | null
+    guest_count: number
+    extra_beds: number
+    needs_caretaker: boolean
+  },
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ ...data, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
   revalidatePath('/admin/bookings')
   revalidatePath(`/admin/bookings/${id}`)
   return { error: null }

@@ -16,10 +16,10 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 const TABS = [
-  { label: 'กำลังเข้าพัก', value: 'staying'  },
-  { label: 'เช็คอินวันนี้', value: 'checkin'  },
+  { label: 'กำลังเข้าพัก',  value: 'staying'  },
+  { label: 'เช็คอินวันนี้',  value: 'checkin'  },
   { label: 'เช็คเอาท์วันนี้', value: 'checkout' },
-  { label: 'ทั้งหมด',       value: 'all'      },
+  { label: 'ทั้งหมด',        value: 'all'      },
 ]
 
 function thaiDate(d: string) {
@@ -39,47 +39,40 @@ export default async function HousekeepingPage({
   const supabase = await createClient()
   const today    = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
 
+  // Always fetch all non-cancelled bookings with checkout >= today for accurate tab counts.
+  // Small hotel (4 rooms) so the full set is always tiny.
   const [{ data: cleaningTypes }, { data: allBookings }] = await Promise.all([
     supabase.from('cleaning_types').select('id, name'),
-    (async () => {
-      let q = supabase
-        .from('bookings')
-        .select(`
-          id, guest_name, checkin_date, checkout_date, nights, status,
-          guest_count, needs_caretaker,
-          room_types(name),
-          rooms(name),
-          cleaning_types(id, name),
-          doctors(name)
-        `)
-        .neq('status', 'cancelled')
-        .order('checkin_date', { ascending: true })
-
-      if (activeFilter === 'staying') {
-        q = q.lte('checkin_date', today).gt('checkout_date', today)
-      } else if (activeFilter === 'checkin') {
-        q = q.eq('checkin_date', today)
-      } else if (activeFilter === 'checkout') {
-        q = q.eq('checkout_date', today)
-      }
-      // 'all' — no extra filter
-
-      return q
-    })(),
+    supabase
+      .from('bookings')
+      .select(`
+        id, guest_name, checkin_date, checkout_date, nights, status,
+        guest_count, needs_caretaker,
+        room_types(name),
+        rooms(name),
+        cleaning_types(id, name),
+        doctors(name)
+      `)
+      .neq('status', 'cancelled')
+      .gte('checkout_date', today)
+      .order('checkin_date', { ascending: true }),
   ])
 
-  const bookings       = allBookings ?? []
-  const cleaningList   = cleaningTypes ?? []
+  const all          = allBookings ?? []
+  const cleaningList = cleaningTypes ?? []
 
-  // Quick counts for the stat chips
-  const stayingCount  = bookings.filter(b =>
-    b.checkin_date <= today && b.checkout_date > today
-  ).length
-  const checkinCount  = bookings.filter(b => b.checkin_date === today).length
-  const checkoutCount = bookings.filter(b => b.checkout_date === today).length
+  // Counts derived from the full dataset — always accurate regardless of active tab.
+  const stayingCount  = all.filter(b => b.checkin_date <= today && b.checkout_date > today).length
+  const checkinCount  = all.filter(b => b.checkin_date === today).length
+  const checkoutCount = all.filter(b => b.checkout_date === today).length
 
-  // For "all" filter, counts are from the full result; for others they're from filtered.
-  // Re-fetch counts only when needed (use full set from 'all' query or reuse when already all)
+  // Filtered list for display only.
+  const bookings =
+    activeFilter === 'staying'  ? all.filter(b => b.checkin_date <= today && b.checkout_date > today) :
+    activeFilter === 'checkin'  ? all.filter(b => b.checkin_date === today) :
+    activeFilter === 'checkout' ? all.filter(b => b.checkout_date === today) :
+    all
+
   const tabHref = (v: string) => `/housekeeping${v === 'staying' ? '' : `?filter=${v}`}`
 
   return (
@@ -97,7 +90,7 @@ export default async function HousekeepingPage({
         </p>
       </div>
 
-      {/* Filter tabs with live counts */}
+      {/* Filter tabs — counts always reflect the full active set */}
       <div className="flex flex-wrap gap-2">
         {TABS.map(tab => {
           const isActive = activeFilter === tab.value
@@ -105,7 +98,7 @@ export default async function HousekeepingPage({
             tab.value === 'staying'  ? stayingCount :
             tab.value === 'checkin'  ? checkinCount :
             tab.value === 'checkout' ? checkoutCount :
-            bookings.length
+            all.length
 
           return (
             <Link
@@ -139,22 +132,21 @@ export default async function HousekeepingPage({
       ) : (
         <div className="space-y-3">
           {bookings.map(b => {
-            const roomName    = (b.rooms         as unknown as { name: string } | null)?.name
-            const roomType    = (b.room_types    as unknown as { name: string } | null)?.name    ?? '—'
-            const doctorName  = (b.doctors       as unknown as { name: string } | null)?.name
-            const currentCT   = b.cleaning_types as unknown as { id: string; name: string } | null
+            const roomName   = (b.rooms         as unknown as { name: string } | null)?.name
+            const roomType   = (b.room_types    as unknown as { name: string } | null)?.name ?? '—'
+            const doctorName = (b.doctors       as unknown as { name: string } | null)?.name
+            const currentCT  = b.cleaning_types as unknown as { id: string; name: string } | null
 
-            const isStaying   = b.checkin_date <= today && b.checkout_date > today
-            const isCheckIn   = b.checkin_date  === today
-            const isCheckOut  = b.checkout_date === today
+            const isStaying  = b.checkin_date <= today && b.checkout_date > today
+            const isCheckIn  = b.checkin_date  === today
+            const isCheckOut = b.checkout_date === today
 
             return (
               <div key={b.id} className="card p-5 space-y-4">
-                {/* Top row: room + guest + status */}
+                {/* Top row: room pill + guest info + badges */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    {/* Room number pill */}
-                    <div className="shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-sm font-semibold"
+                    <div className="shrink-0 w-12 h-12 rounded-lg flex items-center justify-center font-semibold"
                       style={{ backgroundColor: 'var(--primary)', color: '#fff',
                                fontFamily: 'var(--font-cormorant, serif)', fontSize: '1.1rem' }}>
                       {roomName ?? '?'}
@@ -165,8 +157,7 @@ export default async function HousekeepingPage({
                         {b.guest_name}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                        {roomType}
-                        {doctorName && ` · ${doctorName}`}
+                        {roomType}{doctorName && ` · ${doctorName}`}
                       </p>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -219,8 +210,7 @@ export default async function HousekeepingPage({
 
                 {/* Cleaning type selector */}
                 <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '0.875rem' }}>
-                  <p className="text-xs mb-2 font-medium tracking-wide"
-                    style={{ color: 'var(--text-light)' }}>
+                  <p className="text-xs mb-2 font-medium tracking-wide" style={{ color: 'var(--text-light)' }}>
                     การทำความสะอาด
                     {currentCT && (
                       <span className="ml-2 font-normal" style={{ color: 'var(--text-muted)' }}>

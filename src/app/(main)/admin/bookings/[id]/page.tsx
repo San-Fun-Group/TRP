@@ -125,7 +125,7 @@ export default async function BookingDetailPage({
             บุคลากร
           </p>
           <Field label="เจ้าหน้าที่" value={staffName} />
-          <Field label="แพทย์"       value={doctorName ?? '(ยังไม่ได้กำหนด)'} />
+          <Field label="แพทย์"       value={doctorName} />
 
           <p className="text-xs font-medium tracking-widest uppercase py-3 mt-3" style={{ color: 'var(--text-light)' }}>
             ราคา
@@ -160,6 +160,11 @@ export default async function BookingDetailPage({
             doctorId={booking.doctor_id}
             rooms={rooms ?? []}
             doctors={doctors ?? []}
+            guestName={booking.guest_name}
+            email={booking.email}
+            guestCount={booking.guest_count}
+            extraBeds={booking.extra_beds}
+            needsCaretaker={booking.needs_caretaker}
           />
         </div>
       </div>
