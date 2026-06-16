@@ -55,10 +55,15 @@ export default function UsersPage() {
   const assignableRoles = isSuperAdmin ? ALL_ROLES : ALL_ROLES.filter(r => r !== 'super_admin')
 
   async function load() {
-    const result = await listUsers()
-    if (result.error) { setLoadErr(result.error); return }
-    setUsers(result.users)
-    setCurrentRole(result.currentRole ?? '')
+    try {
+      const result = await listUsers()
+      if (result.error) { setLoadErr(result.error); return }
+      setLoadErr(null)
+      setUsers(result.users)
+      setCurrentRole(result.currentRole ?? '')
+    } catch {
+      setLoadErr('ไม่สามารถโหลดข้อมูลผู้ใช้ได้ กรุณาลองใหม่')
+    }
   }
 
   useEffect(() => { load() }, [])
@@ -68,19 +73,27 @@ export default function UsersPage() {
     const fd = new FormData()
     fd.set('email', email); fd.set('password', password); fd.set('role', role)
     startTransition(async () => {
-      const res = await createUser(fd)
-      if (res.error) { setActionErr(res.error); return }
-      setEmail(''); setPassword(''); setShowCreate(false)
-      await load()
+      try {
+        const res = await createUser(fd)
+        if (res.error) { setActionErr(res.error); return }
+        setEmail(''); setPassword(''); setShowCreate(false)
+        await load()
+      } catch {
+        setActionErr('ไม่สามารถสร้างผู้ใช้ได้ กรุณาลองใหม่')
+      }
     })
   }
 
   function handleRoleChange(userId: string, newRole: AppRole) {
     setActionErr(null)
     startTransition(async () => {
-      const res = await updateUserRole(userId, newRole)
-      if (res.error) { setActionErr(res.error); await load() }
-      else await load()
+      try {
+        const res = await updateUserRole(userId, newRole)
+        if (res.error) setActionErr(res.error)
+        await load()
+      } catch {
+        setActionErr('ไม่สามารถเปลี่ยนสิทธิ์ได้ กรุณาลองใหม่')
+      }
     })
   }
 
@@ -88,9 +101,13 @@ export default function UsersPage() {
     if (!confirm(`ลบบัญชี ${userEmail} ใช่หรือไม่?`)) return
     setActionErr(null)
     startTransition(async () => {
-      const res = await deleteUser(userId)
-      if (res.error) setActionErr(res.error)
-      else await load()
+      try {
+        const res = await deleteUser(userId)
+        if (res.error) setActionErr(res.error)
+        else await load()
+      } catch {
+        setActionErr('ไม่สามารถลบผู้ใช้ได้ กรุณาลองใหม่')
+      }
     })
   }
 
