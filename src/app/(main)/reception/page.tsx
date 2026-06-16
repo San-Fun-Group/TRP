@@ -24,7 +24,7 @@ async function handleCancel(formData: FormData): Promise<void> {
 
   await ctx.supabase.from('bookings').update({ status: 'cancelled', updated_by: null }).eq('id', id)
   revalidatePath('/reception')
-  revalidatePath('/reception/bookings')
+  revalidatePath('/reception/history')
 }
 
 async function handleCheckout(formData: FormData): Promise<void> {
@@ -38,7 +38,7 @@ async function handleCheckout(formData: FormData): Promise<void> {
     .update({ status: 'checked_out', cleaning_type_id: null, updated_by: null })
     .eq('id', id)
   revalidatePath('/reception')
-  revalidatePath('/reception/bookings')
+  revalidatePath('/reception/history')
   revalidatePath('/housekeeping')
 }
 
@@ -52,7 +52,7 @@ async function handleUpdatePayment(formData: FormData): Promise<void> {
 
   await ctx.supabase.from('bookings').update({ payment_status: paymentStatus, updated_by: null }).eq('id', id)
   revalidatePath('/reception')
-  revalidatePath('/reception/bookings')
+  revalidatePath('/reception/history')
 }
 
 export default async function ReceptionPage() {
@@ -107,10 +107,10 @@ export default async function ReceptionPage() {
           </p>
         </div>
         <div className="flex gap-3 shrink-0">
-          <Link href="/reception/bookings"
+          <Link href="/reception/history"
             className="text-xs px-4 py-2 font-medium tracking-widest uppercase border transition-colors"
             style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
-            จัดการการจอง
+            ค้นหาการจอง
           </Link>
           <Link href="/booking/new"
             className="btn-gold inline-flex items-center gap-1 px-4 py-2 text-xs font-medium tracking-widest uppercase">
@@ -124,7 +124,7 @@ export default async function ReceptionPage() {
         <StatCard label="ห้องว่าง"        value={vacantRooms.length}      accent="var(--success)" href="#rooms" />
         <StatCard label="รอเช็คอิน"       value={arrivals?.length ?? 0}   accent="#8475BB"  href="#checkin" />
         <StatCard label="เช็คเอาท์วันนี้"  value={departuresToday}         accent="#C4A26A"  href="#inhouse" />
-        <StatCard label="รอชำระเงิน"      value={unpaidCount ?? 0}        accent="#C0392B"  href="/reception/bookings?payment=pending" />
+        <StatCard label="รอชำระเงิน"      value={unpaidCount ?? 0}        accent="#C0392B"  href="/reception/history?payment=pending" />
       </div>
 
       {/* Room board */}
@@ -146,7 +146,7 @@ export default async function ReceptionPage() {
                   <p className="text-sm font-medium" style={{ color: 'var(--primary)' }}>{r.name}</p>
                   <p className="text-xs mb-1.5" style={{ color: 'var(--text-light)' }}>{roomType}</p>
                   {occupant ? (
-                    <Link href={`/reception/bookings/${occupant.id}`}
+                    <Link href={`/reception/history/${occupant.id}`}
                       className="text-xs font-medium hover:underline block truncate" style={{ color: '#C4A26A' }}>
                       {occupant.guest_name}
                     </Link>
@@ -197,7 +197,7 @@ export default async function ReceptionPage() {
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                       <td className="py-3 pr-4">
-                        <Link href={`/reception/bookings/${b.id}`}
+                        <Link href={`/reception/history/${b.id}`}
                           className="font-medium hover:underline" style={{ color: 'var(--primary)' }}>
                           {b.guest_name}
                         </Link>
@@ -268,7 +268,7 @@ export default async function ReceptionPage() {
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                       <td className="py-3 pr-4">
-                        <Link href={`/reception/bookings/${b.id}`}
+                        <Link href={`/reception/history/${b.id}`}
                           className="font-medium hover:underline" style={{ color: 'var(--primary)' }}>
                           {b.guest_name}
                         </Link>

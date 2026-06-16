@@ -91,8 +91,8 @@ export async function updateBookingStatus(
 
   if (error) return { error: error.message }
   revalidatePath('/reception')
-  revalidatePath('/reception/bookings')
-  revalidatePath(`/reception/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   revalidatePath('/housekeeping')
   return { error: null }
 }
@@ -118,8 +118,8 @@ export async function updateGuestInfo(
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/reception/bookings')
-  revalidatePath(`/reception/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   return { error: null }
 }
 
@@ -139,8 +139,8 @@ export async function updatePaymentStatus(
 
   if (error) return { error: error.message }
   revalidatePath('/reception')
-  revalidatePath('/reception/bookings')
-  revalidatePath(`/reception/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   return { error: null }
 }
 
@@ -159,8 +159,8 @@ export async function assignRoom(
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/reception/bookings')
-  revalidatePath(`/reception/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   return { error: null }
 }
 
@@ -193,8 +193,8 @@ export async function checkInBooking(
 
   if (error) return { error: error.message }
   revalidatePath('/reception')
-  revalidatePath('/reception/bookings')
-  revalidatePath(`/reception/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   revalidatePath('/housekeeping')
   return { error: null }
 }
@@ -216,7 +216,7 @@ export async function assignDoctor(
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/reception/bookings')
-  revalidatePath(`/reception/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   return { error: null }
 }

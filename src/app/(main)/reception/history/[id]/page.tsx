@@ -77,7 +77,7 @@ export default async function BookingDetailPage({
     <div className="space-y-6">
       {/* Back */}
       <div>
-        <Link href="/reception/bookings" className="text-xs" style={{ color: 'var(--text-light)' }}>
+        <Link href="/reception/history" className="text-xs" style={{ color: 'var(--text-light)' }}>
           ← การจองทั้งหมด
         </Link>
       </div>
