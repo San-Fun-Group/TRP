@@ -11,17 +11,24 @@ RETURNS text LANGUAGE sql STABLE AS $$
 $$;
 
 -- ── 2. Availability trigger ───────────────────────────────────
--- Enforces: overlapping non-cancelled bookings for a room_type
--- cannot exceed the number of active physical rooms in that type.
+-- Enforces: the max number of bookings occupying any single night
+-- within the new stay cannot exceed the number of active physical
+-- rooms in that room_type.
 --
--- Half-open daterange '[)' allows same-day turnover.
+-- Checking "does any other booking's range intersect mine at all" is
+-- NOT enough — two existing bookings that don't overlap each other
+-- (e.g. back-to-back with same-day turnover) can share one physical
+-- room. Only the max *simultaneous* occupancy on any given night
+-- determines whether a room is actually free.
+--
+-- Half-open '[checkin, checkout)' allows same-day turnover.
 -- pg_advisory_xact_lock serializes concurrent INSERTs on the same
--- room_type so the COUNT is accurate under load.
+-- room_type so the count is accurate under load.
 CREATE OR REPLACE FUNCTION check_room_availability()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
   v_capacity    int;
-  v_overlapping int;
+  v_max_overlap int;
 BEGIN
   IF NEW.status = 'cancelled' THEN RETURN NEW; END IF;
 
@@ -31,18 +38,23 @@ BEGIN
     FROM rooms
    WHERE room_type_id = NEW.room_type_id AND is_active = true;
 
-  SELECT COUNT(*) INTO v_overlapping
-    FROM bookings b
-   WHERE b.room_type_id = NEW.room_type_id
-     AND b.status      != 'cancelled'
-     AND b.id          != NEW.id
-     AND daterange(b.checkin_date, b.checkout_date, '[)')
-         && daterange(NEW.checkin_date, NEW.checkout_date, '[)');
+  SELECT COALESCE(MAX(occupied), 0) INTO v_max_overlap
+    FROM (
+      SELECT COUNT(*) AS occupied
+        FROM generate_series(NEW.checkin_date, NEW.checkout_date - 1, interval '1 day') AS night
+        JOIN bookings b
+          ON b.room_type_id  = NEW.room_type_id
+         AND b.status       != 'cancelled'
+         AND b.id           != NEW.id
+         AND b.checkin_date <= night
+         AND b.checkout_date > night
+       GROUP BY night
+    ) nightly;
 
-  IF v_overlapping + 1 > v_capacity THEN
+  IF v_max_overlap + 1 > v_capacity THEN
     RAISE EXCEPTION
-      'No rooms available for room type % from % to % (capacity: %, booked: %)',
-      NEW.room_type_id, NEW.checkin_date, NEW.checkout_date, v_capacity, v_overlapping
+      'No rooms available for room type % from % to % (capacity: %, max overlap: %)',
+      NEW.room_type_id, NEW.checkin_date, NEW.checkout_date, v_capacity, v_max_overlap
       USING ERRCODE = 'P0001';
   END IF;
 

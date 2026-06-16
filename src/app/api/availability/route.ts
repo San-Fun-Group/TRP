@@ -20,12 +20,16 @@ export async function GET(request: Request) {
 
   if (!roomTypes?.length) return NextResponse.json({})
 
-  // For each room type, count capacity and overlapping bookings
+  // For each room type, capacity vs. the max number of bookings occupying
+  // any single night within [checkin, checkout) — not a blanket overlap
+  // count. Two existing bookings that don't overlap each other (e.g.
+  // back-to-back with same-day turnover) can share one physical room, so
+  // only the worst single night determines true availability for the stay.
   const results: Record<string, { available: number; capacity: number }> = {}
 
   await Promise.all(
     roomTypes.map(async rt => {
-      const [{ count: capacity }, { count: booked }] = await Promise.all([
+      const [{ count: capacity }, { data: bookings }] = await Promise.all([
         supabase
           .from('rooms')
           .select('*', { count: 'exact', head: true })
@@ -33,7 +37,7 @@ export async function GET(request: Request) {
           .eq('is_active', true),
         supabase
           .from('bookings')
-          .select('*', { count: 'exact', head: true })
+          .select('checkin_date, checkout_date')
           .eq('room_type_id', rt.id)
           .neq('status', 'cancelled')
           .lt('checkin_date', checkout)
@@ -41,8 +45,13 @@ export async function GET(request: Request) {
       ])
 
       const cap = capacity ?? 0
-      const bkd = booked ?? 0
-      results[rt.id] = { capacity: cap, available: Math.max(0, cap - bkd) }
+      let maxOccupied = 0
+      for (let d = new Date(checkin + 'T00:00:00Z'); d < new Date(checkout + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1)) {
+        const day = d.toISOString().slice(0, 10)
+        const occupied = (bookings ?? []).filter(b => b.checkin_date <= day && b.checkout_date > day).length
+        if (occupied > maxOccupied) maxOccupied = occupied
+      }
+      results[rt.id] = { capacity: cap, available: Math.max(0, cap - maxOccupied) }
     })
   )
 
