@@ -1,8 +1,13 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 const BOOKING_ROLES = new Set(['super_admin', 'admin', 'reception', 'agent'])
+const UPDATE_ROLES  = new Set(['super_admin', 'admin', 'reception'])
+
+export type BookingStatus  = 'new' | 'confirmed' | 'checked_out' | 'cancelled'
+export type PaymentStatus  = 'pending' | 'paid'
 
 // Price snapshot fields are intentionally excluded — the server re-fetches
 // authoritative values from the DB so clients cannot manipulate pricing.
@@ -64,5 +69,87 @@ export async function createBooking(payload: BookingPayload): Promise<{ error: s
     return { error: error.message }
   }
 
+  return { error: null }
+}
+
+export async function updateBookingStatus(
+  id: string,
+  status: BookingStatus,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ status, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/admin')
+  revalidatePath('/admin/bookings')
+  revalidatePath(`/admin/bookings/${id}`)
+  return { error: null }
+}
+
+export async function updatePaymentStatus(
+  id: string,
+  paymentStatus: PaymentStatus,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ payment_status: paymentStatus, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/admin')
+  revalidatePath('/admin/bookings')
+  revalidatePath(`/admin/bookings/${id}`)
+  return { error: null }
+}
+
+export async function assignRoom(
+  id: string,
+  roomId: string | null,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ room_id: roomId, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/admin/bookings')
+  revalidatePath(`/admin/bookings/${id}`)
+  return { error: null }
+}
+
+export async function assignDoctor(
+  id: string,
+  doctorId: string | null,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ doctor_id: doctorId, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/admin/bookings')
+  revalidatePath(`/admin/bookings/${id}`)
   return { error: null }
 }
