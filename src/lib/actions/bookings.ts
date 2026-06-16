@@ -2,9 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-
-const BOOKING_ROLES = new Set(['super_admin', 'admin', 'reception', 'agent'])
-const UPDATE_ROLES  = new Set(['super_admin', 'admin', 'reception'])
+import { BOOKING_ROLES, UPDATE_ROLES } from '@/lib/constants/roles'
 
 export type BookingStatus  = 'new' | 'confirmed' | 'checked_out' | 'cancelled'
 export type PaymentStatus  = 'pending' | 'paid'
@@ -59,8 +57,8 @@ export async function createBooking(payload: BookingPayload): Promise<{ error: s
     discount_percent_at_booking: discount?.percent ?? 0,
     status:                      'new',
     payment_status:              'pending',
-    created_by:                  null,
-    updated_by:                  null,
+    created_by:                  user.id,
+    updated_by:                  user.id,
   })
 
   if (error) {
@@ -83,12 +81,43 @@ export async function updateBookingStatus(
   const role = user.app_metadata?.role as string | undefined
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
+  // Reset cleaning status when guest checks out so housekeeping knows the room needs cleaning
+  const patch: Record<string, unknown> = { status, updated_by: user.id }
+  if (status === 'checked_out') patch.cleaning_type_id = null
+
   const { error } = await supabase.from('bookings')
-    .update({ status, updated_by: null })
+    .update(patch)
     .eq('id', id)
 
   if (error) return { error: error.message }
   revalidatePath('/admin')
+  revalidatePath('/admin/bookings')
+  revalidatePath(`/admin/bookings/${id}`)
+  revalidatePath('/housekeeping')
+  return { error: null }
+}
+
+export async function updateGuestInfo(
+  id: string,
+  data: {
+    guest_name: string
+    email: string | null
+    guest_count: number
+    extra_beds: number
+    needs_caretaker: boolean
+  },
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ ...data, updated_by: user.id })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
   revalidatePath('/admin/bookings')
   revalidatePath(`/admin/bookings/${id}`)
   return { error: null }
@@ -105,7 +134,7 @@ export async function updatePaymentStatus(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   const { error } = await supabase.from('bookings')
-    .update({ payment_status: paymentStatus, updated_by: null })
+    .update({ payment_status: paymentStatus, updated_by: user.id })
     .eq('id', id)
 
   if (error) return { error: error.message }
@@ -126,7 +155,7 @@ export async function assignRoom(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   const { error } = await supabase.from('bookings')
-    .update({ room_id: roomId, updated_by: null })
+    .update({ room_id: roomId, updated_by: user.id })
     .eq('id', id)
 
   if (error) return { error: error.message }
@@ -148,7 +177,7 @@ export async function assignDoctor(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   const { error } = await supabase.from('bookings')
-    .update({ doctor_id: doctorId, updated_by: null })
+    .update({ doctor_id: doctorId, updated_by: user.id })
     .eq('id', id)
 
   if (error) return { error: error.message }

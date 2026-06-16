@@ -1,47 +1,61 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { STATUS_LABEL, STATUS_COLOR } from '@/lib/constants/booking'
+import { thaiDate } from '@/lib/utils/date'
+import { joinRow } from '@/lib/utils/supabase'
 
-const STATUS_LABEL: Record<string, string> = {
-  new:         'ใหม่',
-  confirmed:   'ยืนยันแล้ว',
-  checked_out: 'เช็คเอาท์',
-  cancelled:   'ยกเลิก',
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  new:         '#8475BB',
-  confirmed:   '#2E7D5E',
-  checked_out: '#AAA',
-  cancelled:   '#C0392B',
-}
-
-function thaiDate(d: string) {
-  return new Date(d + 'T12:00:00Z').toLocaleDateString('th-TH', {
-    day: 'numeric', month: 'short', year: '2-digit',
-  })
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
 }
 
 export default async function HomePage() {
   const supabase = await createClient()
 
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
+  const today    = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
+  const end14    = addDays(today, 14)
 
-  const { count: totalRooms } = await supabase
-    .from('rooms').select('*', { count: 'exact', head: true }).eq('is_active', true)
-
-  const { count: occupiedToday } = await supabase
-    .from('bookings').select('*', { count: 'exact', head: true })
-    .neq('status', 'cancelled').lte('checkin_date', today).gt('checkout_date', today)
-
-  const { data: recentBookings } = await supabase
-    .from('bookings')
-    .select(`id, guest_name, checkin_date, checkout_date, nights, total_price, status, payment_status, room_types(name), rooms(name)`)
-    .order('created_at', { ascending: false })
-    .limit(10)
+  const [
+    { count: totalRooms },
+    { count: occupiedToday },
+    { data: recentBookings },
+    { data: roomTypesWithCount },
+    { data: upcomingBookings },
+  ] = await Promise.all([
+    supabase.from('rooms').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('bookings').select('*', { count: 'exact', head: true })
+      .neq('status', 'cancelled').lte('checkin_date', today).gt('checkout_date', today),
+    supabase.from('bookings')
+      .select(`id, guest_name, checkin_date, checkout_date, nights, total_price, status, payment_status, room_types(name), rooms(name)`)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase.from('room_types')
+      .select('id, name, rooms(id)')
+      .eq('is_active', true)
+      .order('name'),
+    supabase.from('bookings')
+      .select('room_type_id, checkin_date, checkout_date')
+      .neq('status', 'cancelled')
+      .lt('checkin_date', end14)
+      .gt('checkout_date', today),
+  ])
 
   const capacity  = totalRooms ?? 0
   const occupied  = occupiedToday ?? 0
   const available = capacity - occupied
+
+  // Build 14-day occupancy grid per room type
+  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i))
+  const calRows = (roomTypesWithCount ?? []).map(rt => {
+    const cap = Array.isArray(rt.rooms) ? (rt.rooms as { id: string }[]).length : 0
+    const occ = days.map(day =>
+      (upcomingBookings ?? []).filter(b =>
+        b.room_type_id === rt.id && b.checkin_date <= day && b.checkout_date > day
+      ).length
+    )
+    return { id: rt.id, name: rt.name, cap, occ }
+  }).filter(r => r.cap > 0)
 
   return (
     <div className="space-y-8">
@@ -74,6 +88,71 @@ export default async function HomePage() {
         </Link>
       </div>
 
+      {/* 14-day occupancy calendar */}
+      {calRows.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--text-light)' }}>
+            ความจุ 14 วัน
+          </h2>
+          <div className="card overflow-x-auto p-4">
+            <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: '2px' }}>
+              <thead>
+                <tr>
+                  <th className="text-left pr-3 pb-2 font-medium whitespace-nowrap" style={{ color: 'var(--text-light)', minWidth: '90px' }}>
+                    ประเภทห้อง
+                  </th>
+                  {days.map(d => {
+                    const dt = new Date(d + 'T12:00:00Z')
+                    const isToday = d === today
+                    return (
+                      <th key={d} className="pb-2 text-center font-medium" style={{ minWidth: '32px', color: isToday ? 'var(--primary)' : 'var(--text-light)' }}>
+                        <div>{dt.toLocaleDateString('th-TH', { weekday: 'narrow' })}</div>
+                        <div style={{ fontWeight: isToday ? 700 : 400 }}>{dt.getUTCDate()}</div>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {calRows.map(row => (
+                  <tr key={row.id}>
+                    <td className="pr-3 py-0.5 font-medium whitespace-nowrap" style={{ color: 'var(--text)' }}>
+                      {row.name}
+                      <span className="ml-1 font-normal" style={{ color: 'var(--text-light)' }}>/{row.cap}</span>
+                    </td>
+                    {row.occ.map((count, i) => {
+                      const pct  = row.cap > 0 ? count / row.cap : 0
+                      const full = count >= row.cap
+                      const bg   = full      ? '#C0392B' :
+                                   pct >= .75 ? '#E67E22' :
+                                   pct >= .5  ? '#C4A26A' :
+                                   pct > 0    ? '#2E7D5E' : 'var(--border)'
+                      const fg   = pct > 0 ? '#fff' : 'var(--text-light)'
+                      return (
+                        <td key={i} className="text-center py-0.5">
+                          <div className="inline-flex items-center justify-center rounded text-xs"
+                            style={{ backgroundColor: bg, color: fg, width: '28px', height: '22px', fontSize: '10px' }}>
+                            {count > 0 ? count : ''}
+                          </div>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="flex gap-4 mt-3 pt-3" style={{ borderTop: '1px solid var(--border-soft)' }}>
+              {[['#2E7D5E','1–49%'],['#C4A26A','50–74%'],['#E67E22','75–99%'],['#C0392B','100% (เต็ม)']].map(([c,l]) => (
+                <div key={l} className="flex items-center gap-1.5">
+                  <div className="w-4 h-3 rounded" style={{ backgroundColor: c }} />
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Recent bookings */}
       <section>
         <h2 className="mb-4 text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--text-light)' }}>
@@ -97,8 +176,8 @@ export default async function HomePage() {
                 </thead>
                 <tbody>
                   {recentBookings.map(b => {
-                    const roomName = (b.rooms as unknown as { name: string } | null)?.name
-                      ?? (b.room_types as unknown as { name: string } | null)?.name ?? '—'
+                    const roomName = joinRow<{ name: string }>(b.rooms)?.name
+                      ?? joinRow<{ name: string }>(b.room_types)?.name ?? '—'
                     return (
                       <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}
                         className="hover:bg-white transition-colors">

@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-const BOOKING_ROLES = new Set(['super_admin', 'admin', 'reception', 'agent'])
-const ADMIN_ROLES   = new Set(['super_admin', 'admin'])
+const BOOKING_ROLES    = new Set(['super_admin', 'admin', 'reception', 'agent'])
+const ADMIN_ROLES      = new Set(['super_admin', 'admin'])
+const RECEPTION_ROLES  = new Set(['super_admin', 'admin', 'reception'])
 
 interface Props { role: string | undefined }
 
@@ -48,8 +49,14 @@ export function NavBar({ role }: Props) {
           {(role === 'housekeeping' || ADMIN_ROLES.has(role ?? '')) && (
             <NavLink href="/housekeeping" isActive={active('/housekeeping')}>Housekeeping</NavLink>
           )}
+          {RECEPTION_ROLES.has(role ?? '') && (
+            <NavLink href="/admin" isActive={active('/admin') && !active('/admin/settings') && !active('/admin/users')}>Reception</NavLink>
+          )}
           {ADMIN_ROLES.has(role ?? '') && (
-            <NavLink href="/admin" isActive={active('/admin')}>Admin</NavLink>
+            <NavLink href="/admin/settings" isActive={active('/admin/settings')}>ตั้งค่า</NavLink>
+          )}
+          {ADMIN_ROLES.has(role ?? '') && (
+            <NavLink href="/admin/users" isActive={active('/admin/users')}>ผู้ใช้งาน</NavLink>
           )}
         </nav>
 

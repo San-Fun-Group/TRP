@@ -3,12 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { BookingActions } from './booking-actions'
 import type { BookingStatus, PaymentStatus } from '@/lib/actions/bookings'
-
-function thaiDate(d: string) {
-  return new Date(d + 'T12:00:00Z').toLocaleDateString('th-TH', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
+import { thaiDateLong } from '@/lib/utils/date'
+import { joinRow } from '@/lib/utils/supabase'
 
 function thaiDateTime(d: string) {
   return new Date(d).toLocaleString('th-TH', {
@@ -69,11 +65,11 @@ export default async function BookingDetailPage({
     .eq('is_active', true)
     .order('name')
 
-  const roomTypeName = (booking.room_types as unknown as { name: string } | null)?.name ?? '—'
-  const roomName     = (booking.rooms    as unknown as { name: string } | null)?.name
-  const staffName    = (booking.staff    as unknown as { name: string } | null)?.name ?? '—'
-  const doctorName   = (booking.doctors  as unknown as { name: string } | null)?.name
-  const discountLabel = (booking.discounts as unknown as { label: string } | null)?.label ?? 'ไม่มีส่วนลด'
+  const roomTypeName  = joinRow<{ name: string }>(booking.room_types)?.name ?? '—'
+  const roomName      = joinRow<{ name: string }>(booking.rooms)?.name
+  const staffName     = joinRow<{ name: string }>(booking.staff)?.name ?? '—'
+  const doctorName    = joinRow<{ name: string }>(booking.doctors)?.name
+  const discountLabel = joinRow<{ label: string }>(booking.discounts)?.label ?? 'ไม่มีส่วนลด'
 
   const nightlyRate = booking.room_price_at_booking + booking.extra_bed_price_at_booking * booking.extra_beds
 
@@ -117,15 +113,15 @@ export default async function BookingDetailPage({
           </p>
           <Field label="ประเภทห้อง"  value={roomTypeName} />
           <Field label="ห้องพักจริง" value={roomName ?? '(ยังไม่ได้กำหนด)'} />
-          <Field label="วันเช็คอิน"  value={thaiDate(booking.checkin_date)} />
-          <Field label="วันเช็คเอาท์" value={thaiDate(booking.checkout_date)} />
+          <Field label="วันเช็คอิน"  value={thaiDateLong(booking.checkin_date)} />
+          <Field label="วันเช็คเอาท์" value={thaiDateLong(booking.checkout_date)} />
           <Field label="จำนวนคืน"    value={`${booking.nights} คืน`} />
 
           <p className="text-xs font-medium tracking-widest uppercase py-3 mt-3" style={{ color: 'var(--text-light)' }}>
             บุคลากร
           </p>
           <Field label="เจ้าหน้าที่" value={staffName} />
-          <Field label="แพทย์"       value={doctorName ?? '(ยังไม่ได้กำหนด)'} />
+          <Field label="แพทย์"       value={doctorName} />
 
           <p className="text-xs font-medium tracking-widest uppercase py-3 mt-3" style={{ color: 'var(--text-light)' }}>
             ราคา
@@ -160,6 +156,11 @@ export default async function BookingDetailPage({
             doctorId={booking.doctor_id}
             rooms={rooms ?? []}
             doctors={doctors ?? []}
+            guestName={booking.guest_name}
+            email={booking.email}
+            guestCount={booking.guest_count}
+            extraBeds={booking.extra_beds}
+            needsCaretaker={booking.needs_caretaker}
           />
         </div>
       </div>
