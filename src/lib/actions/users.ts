@@ -22,13 +22,18 @@ function err(e: unknown): { error: string } {
 
 export async function listUsers(): Promise<{
   users: { id: string; email: string; role: string; created_at: string; last_sign_in_at: string | null }[]
+  currentRole: string | null
   error: string | null
 }> {
-  try { await requireAdmin() } catch (e) { return { users: [], error: (e as Error).message } }
+  const supabase = await createClient()
+  const { data: { user: me } } = await supabase.auth.getUser()
+  const currentRole = (me?.app_metadata?.role as string | undefined) ?? null
+
+  try { await requireAdmin() } catch (e) { return { users: [], currentRole, error: (e as Error).message } }
 
   const svc = createServiceClient()
   const { data, error } = await svc.auth.admin.listUsers({ perPage: 200 })
-  if (error) return { users: [], error: error.message }
+  if (error) return { users: [], currentRole, error: error.message }
 
   const users = data.users.map(u => ({
     id:              u.id,
@@ -38,7 +43,7 @@ export async function listUsers(): Promise<{
     last_sign_in_at: u.last_sign_in_at ?? null,
   }))
 
-  return { users, error: null }
+  return { users, currentRole, error: null }
 }
 
 export async function createUser(formData: FormData): Promise<{ error: string | null }> {

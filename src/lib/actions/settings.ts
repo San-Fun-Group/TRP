@@ -2,8 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-
-const ADMIN_ROLES = new Set(['super_admin', 'admin'])
+import { ADMIN_ROLES } from '@/lib/constants/roles'
 
 async function requireAdmin(): Promise<void> {
   const supabase = await createClient()
@@ -21,7 +20,7 @@ export async function upsertRoomType(formData: FormData): Promise<void> {
   const name            = (formData.get('name') as string).trim()
   const price_per_night = parseInt(formData.get('price_per_night') as string, 10)
   const extra_bed_price = parseInt(formData.get('extra_bed_price') as string, 10)
-  if (!name) return
+  if (!name || isNaN(price_per_night) || isNaN(extra_bed_price) || price_per_night < 0 || extra_bed_price < 0) return
 
   const svc = createServiceClient()
   if (id) {

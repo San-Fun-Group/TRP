@@ -2,8 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-
-const HK_ROLES = new Set(['super_admin', 'admin', 'housekeeping', 'reception'])
+import { HK_ROLES } from '@/lib/constants/roles'
 
 export async function updateCleaningType(
   bookingId: string,

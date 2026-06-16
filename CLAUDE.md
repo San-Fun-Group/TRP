@@ -32,16 +32,24 @@ Pre-commit (husky + lint-staged) runs `eslint --fix` + `tsc --noEmit` automatica
 ```
 src/app/
   page.tsx                  — root redirect only (middleware handles routing)
+  not-found.tsx             — global 404 page
   login/                    — public, email+password auth
   auth/callback/            — OAuth/magic-link exchange
   (main)/                   — auth-gated group layout
     layout.tsx              — session check + NavBar
+    error.tsx               — error boundary for all (main) routes
     home/page.tsx           — occupancy dashboard + recent bookings
     booking/new/            — IPD booking form (page.tsx + booking-form.tsx + date-range-picker.tsx)
-    housekeeping/           — TODO: cleaning type updates
-    admin/                  — TODO: user/lookup management
+    housekeeping/           — cleaning type updates per booking
+    admin/
+      page.tsx              — dashboard: today's arrivals + unpaid confirmed
+      bookings/page.tsx     — full booking list with filters + CSV export
+      bookings/[id]/        — booking detail + actions (status, payment, room, doctor)
+      users/page.tsx        — user management (create, role change, delete)
+      settings/page.tsx     — room types, rooms, doctors, staff, discounts, cleaning types
   api/
     availability/route.ts   — GET ?checkin=&checkout= → per-room-type availability counts
+    bookings/export/route.ts — GET with filters → CSV download
 ```
 
 ### Auth & roles
@@ -59,7 +67,7 @@ Five roles in the system:
 | `housekeeping` | read bookings, update `cleaning_type_id` via RPC only |
 
 Role enforcement is **double-layered**:
-1. **Middleware** (`src/proxy.ts`) — redirects unauthorized routes before the page renders
+1. **Middleware** (`src/proxy.ts`) — Next.js 16 uses `proxy.ts` as the middleware entry point (replaces `middleware.ts` from older versions). Redirects unauthorized routes before the page renders.
 2. **Supabase RLS** (`003_rls.sql`) — enforces at the DB layer via `current_user_role()` SQL function that reads from the JWT `app_metadata`
 
 ### Supabase clients

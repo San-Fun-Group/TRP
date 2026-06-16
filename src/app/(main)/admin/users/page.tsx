@@ -18,7 +18,15 @@ const ROLE_COLOR: Record<string, string> = {
   agent:        '#C4A26A',
   housekeeping: '#888',
 }
-const ROLES: AppRole[] = ['super_admin', 'admin', 'reception', 'agent', 'housekeeping']
+const ROLE_DESC: Record<string, string> = {
+  super_admin:  'ควบคุมทุกอย่าง รวมถึงตั้งค่าสิทธิ์ Super Admin',
+  admin:        'CRUD ทุกตาราง · ตั้งค่าระบบ · จัดการผู้ใช้',
+  reception:    'จัดการการจอง (สถานะ / ชำระเงิน / ห้อง) · สร้างการจอง',
+  agent:        'สร้างการจองเท่านั้น · อ่านข้อมูลการตั้งค่า',
+  housekeeping: 'อ่านการจอง · อัปเดตประเภทงานทำความสะอาด',
+}
+
+const ALL_ROLES: AppRole[] = ['super_admin', 'admin', 'reception', 'agent', 'housekeeping']
 
 interface User { id: string; email: string; role: string; created_at: string; last_sign_in_at: string | null }
 
@@ -29,21 +37,28 @@ function thaiDate(iso: string) {
 }
 
 export default function UsersPage() {
-  const [users, setUsers]       = useState<User[]>([])
-  const [loadErr, setLoadErr]   = useState<string | null>(null)
-  const [actionErr, setActionErr] = useState<string | null>(null)
+  const [users, setUsers]           = useState<User[]>([])
+  const [currentRole, setCurrentRole] = useState<string>('')
+  const [loadErr, setLoadErr]       = useState<string | null>(null)
+  const [actionErr, setActionErr]   = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [showCreate, setShowCreate] = useState(false)
+  const [showLegend, setShowLegend] = useState(false)
 
   // Create form state
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole]         = useState<AppRole>('reception')
 
+  const isSuperAdmin = currentRole === 'super_admin'
+  // Admins can assign any role except super_admin (server enforces this too)
+  const assignableRoles = isSuperAdmin ? ALL_ROLES : ALL_ROLES.filter(r => r !== 'super_admin')
+
   async function load() {
     const result = await listUsers()
-    if (result.error) setLoadErr(result.error)
-    else setUsers(result.users)
+    if (result.error) { setLoadErr(result.error); return }
+    setUsers(result.users)
+    setCurrentRole(result.currentRole ?? '')
   }
 
   useEffect(() => { load() }, [])
@@ -64,7 +79,7 @@ export default function UsersPage() {
     setActionErr(null)
     startTransition(async () => {
       const res = await updateUserRole(userId, newRole)
-      if (res.error) setActionErr(res.error)
+      if (res.error) { setActionErr(res.error); await load() }
       else await load()
     })
   }
@@ -85,7 +100,7 @@ export default function UsersPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <Link href="/admin" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
-            ← Admin
+            ← Reception
           </Link>
           <h1 style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
             จัดการผู้ใช้งาน
@@ -97,6 +112,33 @@ export default function UsersPage() {
         >
           {showCreate ? '✕ ปิด' : '+ เพิ่มผู้ใช้'}
         </button>
+      </div>
+
+      {/* Role permissions legend */}
+      <div className="card p-4">
+        <button
+          type="button"
+          onClick={() => setShowLegend(v => !v)}
+          className="w-full flex items-center justify-between text-xs font-medium tracking-widest uppercase"
+          style={{ color: 'var(--text-light)' }}
+        >
+          <span>สิทธิ์การใช้งานแต่ละบทบาท</span>
+          <span>{showLegend ? '▲' : '▼'}</span>
+        </button>
+        {showLegend && (
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {ALL_ROLES.map(r => (
+              <div key={r} className="flex gap-2 p-2.5 rounded"
+                style={{ backgroundColor: `${ROLE_COLOR[r]}0E`, border: `1px solid ${ROLE_COLOR[r]}25` }}>
+                <span className="shrink-0 mt-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: ROLE_COLOR[r] }} />
+                <div>
+                  <p className="text-xs font-semibold" style={{ color: ROLE_COLOR[r] }}>{ROLE_LABEL[r]}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{ROLE_DESC[r]}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Create form */}
@@ -125,7 +167,7 @@ export default function UsersPage() {
               <select value={role} onChange={e => setRole(e.target.value as AppRole)}
                 className="w-full text-sm px-3 py-2 rounded"
                 style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }}>
-                {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                {assignableRoles.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
               </select>
             </label>
           </div>
@@ -169,6 +211,7 @@ export default function UsersPage() {
                 <td className="py-3 pr-4 text-sm" style={{ color: 'var(--text)' }}>{u.email}</td>
                 <td className="py-3 pr-4">
                   <select
+                    key={u.id + '-' + u.role}
                     defaultValue={u.role}
                     disabled={isPending}
                     onChange={e => handleRoleChange(u.id, e.target.value as AppRole)}
@@ -179,7 +222,11 @@ export default function UsersPage() {
                       color: ROLE_COLOR[u.role] ?? '#AAA',
                     }}
                   >
-                    {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                    {assignableRoles.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                    {/* Show current role even if not in assignable list (e.g. super_admin viewing another super_admin) */}
+                    {!assignableRoles.includes(u.role as AppRole) && (
+                      <option value={u.role}>{ROLE_LABEL[u.role] ?? u.role}</option>
+                    )}
                   </select>
                 </td>
                 <td className="py-3 pr-4 text-xs" style={{ color: 'var(--text-muted)' }}>

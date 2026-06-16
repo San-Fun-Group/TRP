@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBooking } from '@/lib/actions/bookings'
 import { DateRangePicker } from './date-range-picker'
+import { thaiDateLong } from '@/lib/utils/date'
 
 interface RoomType    { id: string; name: string; price_per_night: number; extra_bed_price: number }
 interface Staff       { id: string; name: string }
@@ -22,12 +23,6 @@ function calcTotal(price: number, extraPrice: number, extraBeds: number, nights:
   return Math.floor((price + extraPrice * extraBeds) * nights * (100 - discPct) / 100)
 }
 
-function thaiDate(d: string) {
-  return new Date(d + 'T12:00:00Z').toLocaleDateString('th-TH', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
-
 export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -40,6 +35,7 @@ export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
 
   const [avail,        setAvail]        = useState<Record<string, Availability>>({})
   const [availLoading, setAvailLoading] = useState(false)
+  const [availError,   setAvailError]   = useState<string | null>(null)
 
   const [roomTypeId,     setRoomTypeId]     = useState(roomTypes[0]?.id ?? '')
   const [guestName,      setGuestName]      = useState('')
@@ -77,15 +73,34 @@ export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
     if (!checkin || !checkout || checkout <= checkin) return
     let cancelled = false
     setAvailLoading(true)
+    setAvailError(null)
     fetch(`/api/availability?checkin=${checkin}&checkout=${checkout}`)
-      .then(r => r.json())
-      .then(data => { if (!cancelled) setAvail(data) })
-      .catch(() => { if (!cancelled) setAvail({}) })
+      .then(r => {
+        if (!r.ok) throw new Error('ตรวจสอบห้องว่างไม่ได้')
+        return r.json()
+      })
+      .then(data => {
+        if (!cancelled) {
+          if (data.error) {
+            setAvailError('ตรวจสอบห้องว่างไม่ได้ กรุณาลองใหม่')
+            setAvail({})
+          } else {
+            setAvail(data)
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvailError('ตรวจสอบห้องว่างไม่ได้ กรุณาลองใหม่')
+          setAvail({})
+        }
+      })
       .finally(() => { if (!cancelled) setAvailLoading(false) })
     return () => {
       cancelled = true
       setAvail({})
       setAvailLoading(false)
+      setAvailError(null)
     }
   }, [checkin, checkout])
 
@@ -124,8 +139,8 @@ export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
 
           <ConfirmRow label="ผู้เข้าพัก"
             value={`${guestName}${email ? ` · ${email}` : ''} (${guestCount} คน)`} />
-          <ConfirmRow label="เช็คอิน"      value={thaiDate(checkin)} />
-          <ConfirmRow label="เช็คเอาท์"    value={thaiDate(checkout)} />
+          <ConfirmRow label="เช็คอิน"      value={thaiDateLong(checkin)} />
+          <ConfirmRow label="เช็คเอาท์"    value={thaiDateLong(checkout)} />
           <ConfirmRow label="จำนวนคืน"     value={`${nights} คืน`} />
           <ConfirmRow label="ประเภทห้อง"   value={roomType?.name ?? '—'} />
           {extraBeds > 0    && <ConfirmRow label="เตียงเสริม"   value={`${extraBeds} เตียง`} />}
@@ -197,6 +212,11 @@ export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
           <div>
             {availLoading ? (
               <span className="text-xs" style={{ color: 'var(--text-light)' }}>กำลังตรวจสอบ…</span>
+            ) : availError ? (
+              <span className="inline-block text-xs px-3 py-1 font-medium rounded-full"
+                style={{ backgroundColor: '#C0392B12', color: '#C0392B' }}>
+                ⚠ {availError}
+              </span>
             ) : roomAvail !== undefined ? (
               <span className="inline-block text-xs px-3 py-1 font-medium rounded-full"
                 style={{

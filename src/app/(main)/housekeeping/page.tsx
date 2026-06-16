@@ -1,19 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { CleaningSelector } from './cleaning-selector'
-
-const STATUS_LABEL: Record<string, string> = {
-  new:         'ใหม่',
-  confirmed:   'ยืนยันแล้ว',
-  checked_out: 'เช็คเอาท์',
-  cancelled:   'ยกเลิก',
-}
-const STATUS_COLOR: Record<string, string> = {
-  new:         '#8475BB',
-  confirmed:   '#2E7D5E',
-  checked_out: '#AAA',
-  cancelled:   '#C0392B',
-}
+import { STATUS_LABEL, STATUS_COLOR } from '@/lib/constants/booking'
+import { thaiDate } from '@/lib/utils/date'
+import { joinRow } from '@/lib/utils/supabase'
 
 const TABS = [
   { label: 'กำลังเข้าพัก',  value: 'staying'  },
@@ -21,12 +11,6 @@ const TABS = [
   { label: 'เช็คเอาท์วันนี้', value: 'checkout' },
   { label: 'ทั้งหมด',        value: 'all'      },
 ]
-
-function thaiDate(d: string) {
-  return new Date(d + 'T12:00:00Z').toLocaleDateString('th-TH', {
-    day: 'numeric', month: 'short', year: '2-digit',
-  })
-}
 
 export default async function HousekeepingPage({
   searchParams,
@@ -90,41 +74,46 @@ export default async function HousekeepingPage({
         </p>
       </div>
 
-      {/* Filter tabs — counts always reflect the full active set */}
-      <div className="flex flex-wrap gap-2">
-        {TABS.map(tab => {
-          const isActive = activeFilter === tab.value
-          const count =
-            tab.value === 'staying'  ? stayingCount :
-            tab.value === 'checkin'  ? checkinCount :
-            tab.value === 'checkout' ? checkoutCount :
-            all.length
+      {/* Layout: filter sidebar + content */}
+      <div className="flex flex-col md:flex-row gap-6 items-start">
 
-          return (
-            <Link
-              key={tab.value}
-              href={tabHref(tab.value)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors"
-              style={{
-                backgroundColor: isActive ? 'var(--primary)' : 'transparent',
-                color:           isActive ? '#fff' : 'var(--text-muted)',
-                border:          `1px solid ${isActive ? 'var(--primary)' : 'var(--border)'}`,
-              }}
-            >
-              {tab.label}
-              <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                style={{
-                  backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : 'var(--border)',
-                  color:           isActive ? '#fff' : 'var(--text-muted)',
-                }}>
-                {count}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
+        {/* Side menu with counts */}
+        <aside className="w-full md:w-44 shrink-0">
+          <nav className="card p-1.5 flex md:flex-col flex-row gap-0.5 overflow-x-auto">
+            {TABS.map(tab => {
+              const isActive = activeFilter === tab.value
+              const count =
+                tab.value === 'staying'  ? stayingCount :
+                tab.value === 'checkin'  ? checkinCount :
+                tab.value === 'checkout' ? checkoutCount :
+                all.length
+              return (
+                <Link
+                  key={tab.value}
+                  href={tabHref(tab.value)}
+                  className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm rounded transition-colors whitespace-nowrap"
+                  style={{
+                    backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                    color:           isActive ? '#fff' : 'var(--text-muted)',
+                    fontWeight:      isActive ? 500 : 400,
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  <span className="text-xs rounded-full px-1.5 py-0.5 font-semibold tabular-nums"
+                    style={{
+                      backgroundColor: isActive ? 'rgba(255,255,255,0.22)' : 'var(--border)',
+                      color:           isActive ? '#fff' : 'var(--text-muted)',
+                    }}>
+                    {count}
+                  </span>
+                </Link>
+              )
+            })}
+          </nav>
+        </aside>
 
-      {/* Booking cards */}
+        {/* Booking cards */}
+        <div className="flex-1 min-w-0">
       {!bookings.length ? (
         <div className="card p-10 text-center">
           <p className="text-sm" style={{ color: 'var(--text-light)' }}>ไม่มีการจองในช่วงที่เลือก</p>
@@ -132,10 +121,10 @@ export default async function HousekeepingPage({
       ) : (
         <div className="space-y-3">
           {bookings.map(b => {
-            const roomName   = (b.rooms         as unknown as { name: string } | null)?.name
-            const roomType   = (b.room_types    as unknown as { name: string } | null)?.name ?? '—'
-            const doctorName = (b.doctors       as unknown as { name: string } | null)?.name
-            const currentCT  = b.cleaning_types as unknown as { id: string; name: string } | null
+            const roomName   = joinRow<{ name: string }>(b.rooms)?.name
+            const roomType   = joinRow<{ name: string }>(b.room_types)?.name ?? '—'
+            const doctorName = joinRow<{ name: string }>(b.doctors)?.name
+            const currentCT  = joinRow<{ id: string; name: string }>(b.cleaning_types)
 
             const isStaying  = b.checkin_date <= today && b.checkout_date > today
             const isCheckIn  = b.checkin_date  === today
@@ -229,6 +218,8 @@ export default async function HousekeepingPage({
           })}
         </div>
       )}
+        </div>{/* end booking cards */}
+      </div>{/* end flex layout */}
     </div>
   )
 }

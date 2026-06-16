@@ -1,25 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-
-const STATUS_LABEL: Record<string, string> = {
-  new:         'ใหม่',
-  confirmed:   'ยืนยันแล้ว',
-  checked_out: 'เช็คเอาท์',
-  cancelled:   'ยกเลิก',
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  new:         '#8475BB',
-  confirmed:   '#2E7D5E',
-  checked_out: '#AAA',
-  cancelled:   '#C0392B',
-}
-
-function thaiDate(d: string) {
-  return new Date(d + 'T12:00:00Z').toLocaleDateString('th-TH', {
-    day: 'numeric', month: 'short', year: '2-digit',
-  })
-}
+import { STATUS_LABEL, STATUS_COLOR } from '@/lib/constants/booking'
+import { thaiDate } from '@/lib/utils/date'
+import { joinRow } from '@/lib/utils/supabase'
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T12:00:00Z')
@@ -65,7 +48,7 @@ export default async function HomePage() {
   // Build 14-day occupancy grid per room type
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, i))
   const calRows = (roomTypesWithCount ?? []).map(rt => {
-    const cap = (rt.rooms as unknown as { id: string }[] | null)?.length ?? 0
+    const cap = Array.isArray(rt.rooms) ? (rt.rooms as { id: string }[]).length : 0
     const occ = days.map(day =>
       (upcomingBookings ?? []).filter(b =>
         b.room_type_id === rt.id && b.checkin_date <= day && b.checkout_date > day
@@ -193,8 +176,8 @@ export default async function HomePage() {
                 </thead>
                 <tbody>
                   {recentBookings.map(b => {
-                    const roomName = (b.rooms as unknown as { name: string } | null)?.name
-                      ?? (b.room_types as unknown as { name: string } | null)?.name ?? '—'
+                    const roomName = joinRow<{ name: string }>(b.rooms)?.name
+                      ?? joinRow<{ name: string }>(b.room_types)?.name ?? '—'
                     return (
                       <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}
                         className="hover:bg-white transition-colors">

@@ -2,8 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import type { PaymentStatus } from '@/lib/actions/bookings'
-
-const ALLOWED_ROLES = ['super_admin', 'admin', 'reception']
+import { thaiDate } from '@/lib/utils/date'
+import { joinRow } from '@/lib/utils/supabase'
+import { UPDATE_ROLES } from '@/lib/constants/roles'
 
 async function handleUpdatePayment(formData: FormData): Promise<void> {
   'use server'
@@ -14,9 +15,9 @@ async function handleUpdatePayment(formData: FormData): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.app_metadata?.role as string | undefined
-  if (!ALLOWED_ROLES.includes(role ?? '')) return
+  if (!UPDATE_ROLES.has(role ?? '')) return
 
-  await supabase.from('bookings').update({ payment_status: paymentStatus, updated_by: null }).eq('id', id)
+  await supabase.from('bookings').update({ payment_status: paymentStatus, updated_by: user!.id }).eq('id', id)
   revalidatePath('/admin')
   revalidatePath('/admin/bookings')
 }
@@ -29,20 +30,14 @@ async function handleCheckout(formData: FormData): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.app_metadata?.role as string | undefined
-  if (!ALLOWED_ROLES.includes(role ?? '')) return
+  if (!UPDATE_ROLES.has(role ?? '')) return
 
   await supabase.from('bookings')
-    .update({ status: 'checked_out', cleaning_type_id: null, updated_by: null })
+    .update({ status: 'checked_out', cleaning_type_id: null, updated_by: user!.id })
     .eq('id', id)
   revalidatePath('/admin')
   revalidatePath('/admin/bookings')
   revalidatePath('/housekeeping')
-}
-
-function thaiDate(d: string) {
-  return new Date(d + 'T12:00:00Z').toLocaleDateString('th-TH', {
-    day: 'numeric', month: 'short', year: '2-digit',
-  })
 }
 
 export default async function AdminPage() {
@@ -87,7 +82,7 @@ export default async function AdminPage() {
         <div>
           <h1 className="leading-tight mb-1"
             style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
-            Admin
+            Reception
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-light)' }}>
             {new Date().toLocaleDateString('th-TH', {
@@ -142,8 +137,8 @@ export default async function AdminPage() {
               </thead>
               <tbody>
                 {arrivingToday.map(b => {
-                  const roomTypeName = (b.room_types as unknown as { name: string } | null)?.name ?? '—'
-                  const roomName     = (b.rooms      as unknown as { name: string } | null)?.name ?? '—'
+                  const roomTypeName = joinRow<{ name: string }>(b.room_types)?.name ?? '—'
+                  const roomName     = joinRow<{ name: string }>(b.rooms)?.name ?? '—'
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                       <td className="py-3 pr-4">
@@ -215,7 +210,7 @@ export default async function AdminPage() {
               </thead>
               <tbody>
                 {unpaidConfirmed.map(b => {
-                  const roomTypeName = (b.room_types as unknown as { name: string } | null)?.name ?? '—'
+                  const roomTypeName = joinRow<{ name: string }>(b.room_types)?.name ?? '—'
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                       <td className="py-3 pr-4">

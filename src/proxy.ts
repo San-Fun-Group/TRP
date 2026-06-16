@@ -1,8 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-const ADMIN_ROLES   = new Set(['super_admin', 'admin'])
-const BOOKING_ROLES = new Set(['super_admin', 'admin', 'reception', 'agent'])
+import { ADMIN_ROLES, RECEPTION_ROLES, BOOKING_ROLES } from '@/lib/constants/roles'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -58,8 +56,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/home', request.url))
   }
 
-  // /admin/* — admin roles only
-  if (pathname.startsWith('/admin') && !ADMIN_ROLES.has(role ?? '')) {
+  // /admin/settings and /admin/users — admin-only
+  if (
+    (pathname.startsWith('/admin/settings') || pathname.startsWith('/admin/users')) &&
+    !ADMIN_ROLES.has(role ?? '')
+  ) {
+    return NextResponse.redirect(new URL('/home', request.url))
+  }
+
+  // /admin/* (dashboard, booking management) — reception + admin
+  if (pathname.startsWith('/admin') && !RECEPTION_ROLES.has(role ?? '')) {
     return NextResponse.redirect(new URL('/home', request.url))
   }
 

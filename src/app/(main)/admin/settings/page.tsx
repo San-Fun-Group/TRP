@@ -60,27 +60,38 @@ export default async function SettingsPage({
       {/* Header */}
       <div>
         <Link href="/admin" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
-          ← Admin
+          ← Reception
         </Link>
         <h1 style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
           ตั้งค่าระบบ
         </h1>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 flex-wrap">
-        {TABS.map(t => (
-          <Link key={t.value} href={tabHref(t.value)}
-            className="px-3 py-1.5 text-xs font-medium rounded-full transition-colors"
-            style={{
-              backgroundColor: tab === t.value ? 'var(--primary)' : 'transparent',
-              color:           tab === t.value ? '#fff' : 'var(--text-muted)',
-              border:          `1px solid ${tab === t.value ? 'var(--primary)' : 'var(--border)'}`,
-            }}>
-            {t.label}
-          </Link>
-        ))}
-      </div>
+      {/* Layout: sidebar + content */}
+      <div className="flex flex-col md:flex-row gap-6 items-start">
+
+        {/* Side menu */}
+        <aside className="w-full md:w-44 shrink-0">
+          <nav className="card p-1.5 flex md:flex-col flex-row gap-0.5 overflow-x-auto">
+            {TABS.map(t => {
+              const isActive = tab === t.value
+              return (
+                <Link key={t.value} href={tabHref(t.value)}
+                  className="flex items-center gap-2 px-3 py-2.5 text-sm rounded transition-colors whitespace-nowrap"
+                  style={{
+                    backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                    color:           isActive ? '#fff' : 'var(--text-muted)',
+                    fontWeight:      isActive ? 500 : 400,
+                  }}>
+                  {t.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </aside>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
 
       {/* ── Room Types ── */}
       {tab === 'room-types' && (
@@ -481,6 +492,9 @@ export default async function SettingsPage({
           </div>
         </section>
       )}
+
+        </div>{/* end content */}
+      </div>{/* end flex layout */}
     </div>
   )
 }
