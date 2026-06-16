@@ -62,6 +62,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_check_room_availability ON bookings;
 CREATE TRIGGER trg_check_room_availability
   BEFORE INSERT OR UPDATE OF status, checkin_date, checkout_date, room_type_id
   ON bookings
