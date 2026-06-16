@@ -31,7 +31,7 @@ interface Props {
   status:             BookingStatus
   paymentStatus:      PaymentStatus
   roomId:             string | null
-  doctorId:           string | null
+  doctorId:           string
   rooms:              Room[]
   doctors:            Doctor[]
 }
@@ -42,8 +42,8 @@ export function BookingActions({
   const [isPending, startTransition] = useTransition()
   const [error, setError]            = useState<string | null>(null)
 
-  const [selectedRoom,   setSelectedRoom]   = useState(roomId   ?? '')
-  const [selectedDoctor, setSelectedDoctor] = useState(doctorId ?? '')
+  const [selectedRoom,   setSelectedRoom]   = useState(roomId ?? '')
+  const [selectedDoctor, setSelectedDoctor] = useState(doctorId)
 
   function act(fn: () => Promise<{ error: string | null }>) {
     setError(null)
@@ -163,14 +163,13 @@ export function BookingActions({
             className="flex-1 text-sm px-3 py-2 rounded"
             style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }}
           >
-            <option value="">— ยังไม่ได้กำหนด —</option>
             {doctors.map(d => (
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </select>
           <button
-            disabled={isPending}
-            onClick={() => act(() => assignDoctor(bookingId, selectedDoctor || null))}
+            disabled={isPending || !selectedDoctor}
+            onClick={() => act(() => assignDoctor(bookingId, selectedDoctor))}
             className="text-xs px-3 py-2 rounded font-medium transition-opacity disabled:opacity-40"
             style={{ backgroundColor: 'var(--primary)', color: '#fff' }}
           >

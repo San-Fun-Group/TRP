@@ -15,6 +15,14 @@ npx tsc --noEmit     # type-check without building
 
 Pre-commit (husky + lint-staged) runs `eslint --fix` + `tsc --noEmit` automatically on staged `.ts/.tsx` files.
 
+## Commit messages
+
+- Subject line: `type: imperative description`, no period, under ~70 chars — e.g. `fix: client-controlled pricing in createBooking`
+- Type prefix is one of: `feat`, `fix`, `docs`, `refactor`, `chore`
+- Body (optional, for non-trivial changes): `-` bullet points explaining what changed and why, not a line-by-line diff narration
+- No `Co-Authored-By` trailers
+- One feature/fix per commit — don't bundle unrelated features together. Small incidental cleanup (deleting an empty file, fixing a typo, etc.) can ride along in the same commit as the feature it was noticed alongside
+
 ## Architecture
 
 **Stack**: Next.js 16 App Router · TypeScript · Tailwind CSS v4 · Supabase (Postgres + Auth)

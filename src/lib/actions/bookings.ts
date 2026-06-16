@@ -11,10 +11,11 @@ export type PaymentStatus  = 'pending' | 'paid'
 
 // Price snapshot fields are intentionally excluded — the server re-fetches
 // authoritative values from the DB so clients cannot manipulate pricing.
-// doctor_id and cleaning_type_id are assigned post-booking by reception/housekeeping
+// cleaning_type_id is assigned post-booking by housekeeping
 interface BookingPayload {
   room_type_id:    string
   staff_id:        string
+  doctor_id:       string
   discount_id:     string | null
   guest_name:      string
   email:           string | null
@@ -136,8 +137,10 @@ export async function assignRoom(
 
 export async function assignDoctor(
   id: string,
-  doctorId: string | null,
+  doctorId: string,
 ): Promise<{ error: string | null }> {
+  if (!doctorId) return { error: 'กรุณาเลือกแพทย์' }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
