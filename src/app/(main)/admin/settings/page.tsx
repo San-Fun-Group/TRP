@@ -59,7 +59,7 @@ export default async function SettingsPage({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <Link href="/admin" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
+        <Link href="/reception" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
           ← Reception
         </Link>
         <h1 style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>

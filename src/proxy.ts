@@ -56,16 +56,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/home', request.url))
   }
 
-  // /admin/settings and /admin/users — admin-only
-  if (
-    (pathname.startsWith('/admin/settings') || pathname.startsWith('/admin/users')) &&
-    !ADMIN_ROLES.has(role ?? '')
-  ) {
+  // /reception/* (front-desk dashboard) — reception + admin
+  if (pathname.startsWith('/reception') && !RECEPTION_ROLES.has(role ?? '')) {
     return NextResponse.redirect(new URL('/home', request.url))
   }
 
-  // /admin/* (dashboard, booking management) — reception + admin
-  if (pathname.startsWith('/admin') && !RECEPTION_ROLES.has(role ?? '')) {
+  // /admin/* (settings, users) — admin-only
+  if (pathname.startsWith('/admin') && !ADMIN_ROLES.has(role ?? '')) {
     return NextResponse.redirect(new URL('/home', request.url))
   }
 

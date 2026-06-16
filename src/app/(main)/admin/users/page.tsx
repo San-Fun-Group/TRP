@@ -116,7 +116,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/admin" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
+          <Link href="/reception" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
             ← Reception
           </Link>
           <h1 style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>

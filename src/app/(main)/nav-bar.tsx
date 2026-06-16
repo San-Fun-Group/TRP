@@ -62,7 +62,7 @@ export function NavBar({ role, email }: Props) {
             <NavLink href="/housekeeping" isActive={active('/housekeeping')}>Housekeeping</NavLink>
           )}
           {RECEPTION_ROLES.has(role ?? '') && (
-            <NavLink href="/admin" isActive={active('/admin') && !active('/admin/settings') && !active('/admin/users')}>Reception</NavLink>
+            <NavLink href="/reception" isActive={active('/reception')}>Reception</NavLink>
           )}
         </nav>
 

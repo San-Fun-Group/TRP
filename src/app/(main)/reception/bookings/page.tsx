@@ -19,12 +19,12 @@ async function handleUpdateStatus(formData: FormData): Promise<void> {
   const role = user?.app_metadata?.role as string | undefined
   if (!UPDATE_ROLES.has(role ?? '')) return
 
-  const patch: Record<string, unknown> = { status, updated_by: user!.id }
+  const patch: Record<string, unknown> = { status, updated_by: null }
   if (status === 'checked_out') patch.cleaning_type_id = null
 
   await supabase.from('bookings').update(patch).eq('id', id)
-  revalidatePath('/admin')
-  revalidatePath('/admin/bookings')
+  revalidatePath('/reception')
+  revalidatePath('/reception/bookings')
   revalidatePath('/housekeeping')
 }
 
@@ -39,9 +39,9 @@ async function handleUpdatePayment(formData: FormData): Promise<void> {
   const role = user?.app_metadata?.role as string | undefined
   if (!UPDATE_ROLES.has(role ?? '')) return
 
-  await supabase.from('bookings').update({ payment_status: paymentStatus, updated_by: user!.id }).eq('id', id)
-  revalidatePath('/admin')
-  revalidatePath('/admin/bookings')
+  await supabase.from('bookings').update({ payment_status: paymentStatus, updated_by: null }).eq('id', id)
+  revalidatePath('/reception')
+  revalidatePath('/reception/bookings')
 }
 
 async function handleUpdateExtraBeds(formData: FormData): Promise<void> {
@@ -55,9 +55,9 @@ async function handleUpdateExtraBeds(formData: FormData): Promise<void> {
   const role = user?.app_metadata?.role as string | undefined
   if (!UPDATE_ROLES.has(role ?? '')) return
 
-  await supabase.from('bookings').update({ extra_beds, updated_by: user!.id }).eq('id', id)
-  revalidatePath('/admin')
-  revalidatePath('/admin/bookings')
+  await supabase.from('bookings').update({ extra_beds, updated_by: null }).eq('id', id)
+  revalidatePath('/reception')
+  revalidatePath('/reception/bookings')
 }
 
 async function handleUpdateCleaning(formData: FormData): Promise<void> {
@@ -72,19 +72,19 @@ async function handleUpdateCleaning(formData: FormData): Promise<void> {
   if (!UPDATE_ROLES.has(role ?? '')) return
 
   await supabase.from('bookings')
-    .update({ cleaning_type_id: cleaning_type_id || null, updated_by: user!.id })
+    .update({ cleaning_type_id: cleaning_type_id || null, updated_by: null })
     .eq('id', id)
-  revalidatePath('/admin')
-  revalidatePath('/admin/bookings')
+  revalidatePath('/reception')
+  revalidatePath('/reception/bookings')
   revalidatePath('/housekeeping')
 }
 
 const TABS = [
-  { label: 'ทั้งหมด',    value: 'all' },
-  { label: 'ใหม่',       value: 'new' },
-  { label: 'ยืนยันแล้ว', value: 'confirmed' },
-  { label: 'เช็คเอาท์',  value: 'checked_out' },
-  { label: 'ยกเลิก',    value: 'cancelled' },
+  { label: 'ทั้งหมด',     value: 'all' },
+  { label: 'ใหม่',        value: 'new' },
+  { label: 'เช็คอินแล้ว', value: 'checked_in' },
+  { label: 'เช็คเอาท์',   value: 'checked_out' },
+  { label: 'ยกเลิก',     value: 'cancelled' },
 ]
 
 export default async function AdminBookingsPage({
@@ -135,7 +135,7 @@ export default async function AdminBookingsPage({
     if (from)       params.set('from', from)
     if (to)         params.set('to', to)
     const qs = params.toString()
-    return `/admin/bookings${qs ? `?${qs}` : ''}`
+    return `/reception/bookings${qs ? `?${qs}` : ''}`
   }
 
   const exportHref = () => {
@@ -160,7 +160,7 @@ export default async function AdminBookingsPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/admin" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
+          <Link href="/reception" className="text-xs mb-2 inline-block" style={{ color: 'var(--text-light)' }}>
             ← Reception
           </Link>
           <h1 style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
@@ -207,7 +207,7 @@ export default async function AdminBookingsPage({
         <div className="flex-1 min-w-0 space-y-4">
 
       {/* Filter bar */}
-      <form method="get" action="/admin/bookings" className="card p-4 space-y-3">
+      <form method="get" action="/reception/bookings" className="card p-4 space-y-3">
         {activeStatus && <input type="hidden" name="status" value={activeStatus} />}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
           <input
@@ -294,13 +294,13 @@ export default async function AdminBookingsPage({
                 {bookings.map(b => {
                   const roomName = joinRow<{ name: string }>(b.rooms)?.name
                     ?? joinRow<{ name: string }>(b.room_types)?.name ?? '—'
-                  const isActive = b.status === 'new' || b.status === 'confirmed'
+                  const isActive = b.status === 'new' || b.status === 'checked_in'
 
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                       {/* Name */}
                       <td className="py-3 pr-3">
-                        <Link href={`/admin/bookings/${b.id}`}
+                        <Link href={`/reception/bookings/${b.id}`}
                           className="font-medium hover:underline" style={{ color: 'var(--primary)' }}>
                           {b.guest_name}
                         </Link>
@@ -386,7 +386,7 @@ export default async function AdminBookingsPage({
 
                       {/* Detail link */}
                       <td className="py-3">
-                        <Link href={`/admin/bookings/${b.id}`}
+                        <Link href={`/reception/bookings/${b.id}`}
                           className="text-xs font-medium"
                           style={{ color: 'var(--text-light)' }}>
                           →
@@ -405,17 +405,17 @@ export default async function AdminBookingsPage({
               const roomName     = (b.rooms         as unknown as { name: string } | null)?.name
                 ?? (b.room_types as unknown as { name: string } | null)?.name ?? '—'
               const cleaningName = (b.cleaning_types as unknown as { name: string } | null)?.name ?? null
-              const isActive     = b.status === 'new' || b.status === 'confirmed'
+              const isActive     = b.status === 'new' || b.status === 'checked_in'
 
               return (
                 <div key={b.id} className="card p-4 space-y-3"
                   style={{ borderLeft: `3px solid ${STATUS_COLOR[b.status] ?? '#AAA'}` }}>
                   <div className="flex items-start justify-between gap-2">
-                    <Link href={`/admin/bookings/${b.id}`}
+                    <Link href={`/reception/bookings/${b.id}`}
                       className="font-medium text-sm hover:underline" style={{ color: 'var(--primary)' }}>
                       {b.guest_name}
                     </Link>
-                    <Link href={`/admin/bookings/${b.id}`} className="text-xs" style={{ color: 'var(--text-light)' }}>→</Link>
+                    <Link href={`/reception/bookings/${b.id}`} className="text-xs" style={{ color: 'var(--text-light)' }}>→</Link>
                   </div>
                   <div className="text-xs flex flex-wrap gap-x-4 gap-y-1" style={{ color: 'var(--text-muted)' }}>
                     <span>{thaiDate(b.checkin_date)} – {thaiDate(b.checkout_date)}</span>

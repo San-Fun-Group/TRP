@@ -7,22 +7,11 @@ import {
   updateGuestInfo,
   assignRoom,
   assignDoctor,
+  checkInBooking,
   type BookingStatus,
   type PaymentStatus,
 } from '@/lib/actions/bookings'
-
-const STATUS_LABEL: Record<string, string> = {
-  new:         'ใหม่',
-  confirmed:   'ยืนยันแล้ว',
-  checked_out: 'เช็คเอาท์',
-  cancelled:   'ยกเลิก',
-}
-const STATUS_COLOR: Record<string, string> = {
-  new:         '#8475BB',
-  confirmed:   '#2E7D5E',
-  checked_out: '#AAA',
-  cancelled:   '#C0392B',
-}
+import { STATUS_LABEL, STATUS_COLOR } from '@/lib/constants/booking'
 
 interface Room   { id: string; name: string }
 interface Doctor { id: string; name: string }
@@ -199,19 +188,19 @@ export function BookingActions({
           </span>
         </div>
         {!isClosed && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {status === 'new' && (
               <ActionBtn
-                label="ยืนยันการจอง"
-                color="#2E7D5E"
-                disabled={isPending}
-                onClick={() => act(() => updateBookingStatus(bookingId, 'confirmed'))}
+                label="เช็คอิน"
+                color="#C4A26A"
+                disabled={isPending || !selectedRoom}
+                onClick={() => act(() => checkInBooking(bookingId, selectedRoom))}
               />
             )}
-            {status === 'confirmed' && (
+            {status === 'checked_in' && (
               <ActionBtn
                 label="เช็คเอาท์"
-                color="#C4A26A"
+                color="#AAA"
                 disabled={isPending}
                 onClick={() => act(() => updateBookingStatus(bookingId, 'checked_out'))}
               />
@@ -222,6 +211,9 @@ export function BookingActions({
               disabled={isPending}
               onClick={() => act(() => updateBookingStatus(bookingId, 'cancelled'))}
             />
+            {status === 'new' && !selectedRoom && (
+              <span className="text-xs" style={{ color: 'var(--text-light)' }}>เลือกห้องด้านล่างก่อนเช็คอิน</span>
+            )}
           </div>
         )}
       </Section>
