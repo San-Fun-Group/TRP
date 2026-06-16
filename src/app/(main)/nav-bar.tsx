@@ -6,9 +6,9 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ADMIN_ROLES, BOOKING_ROLES, RECEPTION_ROLES } from '@/lib/constants/roles'
 
-interface Props { role: string | undefined }
+interface Props { role: string | undefined; email: string | undefined }
 
-export function NavBar({ role }: Props) {
+export function NavBar({ role, email }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
 
@@ -71,13 +71,13 @@ export function NavBar({ role }: Props) {
           <button type="button" onClick={() => setMenuOpen(v => !v)}
             className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full transition-colors"
             style={{ backgroundColor: menuOpen ? 'rgba(255,255,255,0.12)' : 'transparent' }}>
-            <span className="hidden sm:block text-xs px-2 py-0.5 font-medium rounded-full"
+            <span className="hidden sm:block text-xs px-2 py-0.5 font-medium rounded-full truncate max-w-40"
               style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.65)' }}>
-              {role ?? 'no role'}
+              {email ?? 'ไม่มีบัญชี'}
             </span>
             <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              {(role ?? '?').charAt(0).toUpperCase()}
+              {(email ?? '?').charAt(0).toUpperCase()}
             </span>
           </button>
 
