@@ -8,10 +8,12 @@ export default async function NewBookingPage() {
     { data: roomTypes },
     { data: staff },
     { data: discounts },
+    { data: doctors },
   ] = await Promise.all([
     supabase.from('room_types').select('id, name, price_per_night, extra_bed_price').eq('is_active', true),
     supabase.from('staff').select('id, name').eq('is_active', true).order('name'),
     supabase.from('discounts').select('id, label, percent').eq('is_active', true).order('percent'),
+    supabase.from('doctors').select('id, name').eq('is_active', true).order('name'),
   ])
 
   return (
@@ -37,6 +39,7 @@ export default async function NewBookingPage() {
         roomTypes={roomTypes ?? []}
         staff={staff ?? []}
         discounts={discounts ?? []}
+        doctors={doctors ?? []}
       />
     </div>
   )

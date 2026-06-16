@@ -61,7 +61,7 @@ CREATE TABLE bookings (
 
   -- Relationships
   staff_id         uuid NOT NULL REFERENCES staff(id)         ON DELETE RESTRICT,
-  doctor_id        uuid          REFERENCES doctors(id)        ON DELETE RESTRICT,
+  doctor_id        uuid NOT NULL REFERENCES doctors(id)        ON DELETE RESTRICT,
   cleaning_type_id uuid          REFERENCES cleaning_types(id) ON DELETE RESTRICT,
   discount_id      uuid          REFERENCES discounts(id)      ON DELETE RESTRICT,
 
@@ -97,7 +97,7 @@ CREATE TABLE bookings (
 
   -- Status
   status         varchar NOT NULL DEFAULT 'new'
-                 CHECK (status IN ('new', 'confirmed', 'checked_out', 'cancelled')),
+                 CHECK (status IN ('new', 'confirmed', 'checked_in', 'checked_out', 'cancelled')),
   payment_status varchar NOT NULL DEFAULT 'pending'
                  CHECK (payment_status IN ('pending', 'paid')),
 

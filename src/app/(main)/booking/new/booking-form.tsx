@@ -8,12 +8,14 @@ import { DateRangePicker } from './date-range-picker'
 interface RoomType    { id: string; name: string; price_per_night: number; extra_bed_price: number }
 interface Staff       { id: string; name: string }
 interface Discount    { id: string; label: string; percent: number }
+interface Doctor      { id: string; name: string }
 interface Availability{ available: number; capacity: number }
 
 interface Props {
   roomTypes: RoomType[]
   staff:     Staff[]
   discounts: Discount[]
+  doctors:   Doctor[]
 }
 
 function calcTotal(price: number, extraPrice: number, extraBeds: number, nights: number, discPct: number) {
@@ -26,7 +28,7 @@ function thaiDate(d: string) {
   })
 }
 
-export function BookingForm({ roomTypes, staff, discounts }: Props) {
+export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -44,6 +46,7 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
   const [email,          setEmail]          = useState('')
   const [guestCount,     setGuestCount]     = useState(1)
   const [staffId,        setStaffId]        = useState(staff[0]?.id ?? '')
+  const [doctorId,       setDoctorId]       = useState(doctors[0]?.id ?? '')
 
   const [discountId,     setDiscountId]     = useState(discounts.find(d => d.percent === 0)?.id ?? discounts[0]?.id ?? '')
   const [extraBeds,      setExtraBeds]      = useState(0)
@@ -62,12 +65,13 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
   const roomAvail = avail[roomTypeId]
   const isFull    = roomAvail !== undefined && roomAvail.available <= 0
 
-  const formKey    = `${checkin}|${checkout}|${roomTypeId}|${guestName}|${staffId}|${discountId}|${extraBeds}|${guestCount}|${needsCaretaker}`
+  const formKey    = `${checkin}|${checkout}|${roomTypeId}|${guestName}|${staffId}|${doctorId}|${discountId}|${extraBeds}|${guestCount}|${needsCaretaker}`
   const datesValid = !!(checkin && checkout && checkout > checkin)
   const canProceed = datesValid && !availLoading && roomAvail !== undefined && !isFull
-  const formReady  = canProceed && guestName.trim().length > 0
+  const formReady  = canProceed && guestName.trim().length > 0 && doctorId.length > 0
 
-  const selectedStaff = staff.find(s => s.id === staffId)
+  const selectedStaff  = staff.find(s => s.id === staffId)
+  const selectedDoctor = doctors.find(d => d.id === doctorId)
 
   useEffect(() => {
     if (!checkin || !checkout || checkout <= checkin) return
@@ -90,7 +94,7 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
     setError(null)
     startTransition(async () => {
       const result = await createBooking({
-        room_type_id: roomTypeId, staff_id: staffId,
+        room_type_id: roomTypeId, staff_id: staffId, doctor_id: doctorId,
         discount_id: discountId || null, guest_name: guestName, email: email || null,
         guest_count: guestCount, checkin_date: checkin, checkout_date: checkout,
         extra_beds: extraBeds, needs_caretaker: needsCaretaker,
@@ -127,6 +131,7 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
           {extraBeds > 0    && <ConfirmRow label="เตียงเสริม"   value={`${extraBeds} เตียง`} />}
           {needsCaretaker   && <ConfirmRow label="ผู้ดูแล"     value="ต้องการผู้ดูแล" />}
           <ConfirmRow label="พนักงานขาย" value={selectedStaff?.name ?? '—'} />
+          <ConfirmRow label="แพทย์เจ้าของไข้" value={selectedDoctor?.name ?? '—'} />
           {(discount?.percent ?? 0) > 0 && (
             <ConfirmRow label="ส่วนลด" value={discount!.label} muted />
           )}
@@ -239,6 +244,11 @@ export function BookingForm({ roomTypes, staff, discounts }: Props) {
             <Field label="พนักงานขาย *">
               <Select value={staffId} onChange={setStaffId}>
                 {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </Select>
+            </Field>
+            <Field label="แพทย์เจ้าของไข้ *">
+              <Select value={doctorId} onChange={setDoctorId}>
+                {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </Select>
             </Field>
             <Field label="ต้องการผู้ดูแล">
