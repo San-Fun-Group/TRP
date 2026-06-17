@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --primary:      #6B5CA8;  /* medium purple — headings, nav text, labels */
-  --primary-hover:#8475BB;
+  --primary:      #523A85;  /* deep purple */
+  --primary-hover:#6B5CA8;
   --gold:         #C4A26A;  /* warm gold — CTAs, active states, luxury accents */
   --gold-hover:   #D4B47A;
   --gold-tint:    rgba(196,162,106,0.12);
-  --accent:       #D8CEF0;  /* soft lavender */
-  --mauve:        #A78FB6;
-  --bg:           #FAFAFA;  /* near-white — calm, spacious */
+  --accent:       #C9BAE1;  /* soft lavender */
+  --mauve:        #AB92B2;
+  --bg:           #FBF5EF;  /* warm cream */
   --surface:      #FFFFFF;
-  --border:       #E8E4EF;
-  --border-soft:  #F0EDF6;
+  --border:       #D4C1D7;
+  --border-soft:  #E8DFE4;
   --text:         #2C2C2C;
-  --text-muted:   #8A7FAA;
-  --text-light:   #C4BBDB;
+  --text-muted:   #9388B0;
+  --text-light:   #CBB2D1;
   --error:        #C0392B;
   --success:      #2E7D5E;
 }
@@ -58,5 +58,5 @@ body {
 .card {
   background: var(--surface);
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(107, 92, 168, 0.07);
+  box-shadow: 0 2px 12px rgba(82, 58, 133, 0.08);
 }

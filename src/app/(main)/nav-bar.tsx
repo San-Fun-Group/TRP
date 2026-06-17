@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -40,31 +41,41 @@ export function NavBar({ role, email }: Props) {
       style={{ backgroundColor: 'var(--primary)', boxShadow: '0 2px 16px rgba(74, 53, 122, 0.18)' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
 
-        {/* Logo */}
-        <Link href="/home" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 flex items-center justify-center text-xs font-bold text-white"
-            style={{ backgroundColor: 'var(--gold)' }}>
-            +
-          </div>
-          <span className="text-sm tracking-widest uppercase hidden sm:block"
-            style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
-            TRP Hotel
-          </span>
-        </Link>
+        {/* Logo + Nav links — grouped left */}
+        <div className="flex items-center gap-6">
 
-        {/* Nav links */}
-        <nav className="flex items-center gap-1">
-          <NavLink href="/home"         isActive={active('/home')}>หน้าหลัก</NavLink>
-          {BOOKING_ROLES.has(role ?? '') && (
-            <NavLink href="/booking/new" isActive={active('/booking')}>IPD Booking</NavLink>
-          )}
-          {(role === 'housekeeping' || isAdmin) && (
-            <NavLink href="/housekeeping" isActive={active('/housekeeping')}>Housekeeping</NavLink>
-          )}
-          {RECEPTION_ROLES.has(role ?? '') && (
-            <NavLink href="/admin" isActive={active('/admin') && !active('/admin/settings') && !active('/admin/users')}>Reception</NavLink>
-          )}
-        </nav>
+          {/* Logo */}
+          <Link href="/home" className="flex items-center gap-2.5 shrink-0">
+            <Image src="/logo.svg" alt="TRP" width={32} height={32} priority />
+            <div className="hidden sm:flex flex-col leading-none">
+              <span className="text-xs font-semibold tracking-widest uppercase"
+                style={{ color: '#fff' }}>TRP</span>
+              <span className="text-[10px] tracking-wider"
+                style={{ color: 'rgba(255,255,255,0.5)' }}>HOSPITAL · IPD</span>
+            </div>
+          </Link>
+
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-5 self-center"
+            style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
+
+          {/* Nav links */}
+          <nav className="flex items-center gap-1">
+            <NavLink href="/home"         isActive={active('/home')}>หน้าหลัก</NavLink>
+            {BOOKING_ROLES.has(role ?? '') && (
+              <NavLink href="/booking/new" isActive={active('/booking')}>IPD Booking</NavLink>
+            )}
+            {(role === 'housekeeping' || isAdmin) && (
+              <NavLink href="/housekeeping" isActive={active('/housekeeping')}>Housekeeping</NavLink>
+            )}
+            {RECEPTION_ROLES.has(role ?? '') && (
+              <NavLink href="/reception" isActive={pathname === '/reception'}>Reception</NavLink>
+            )}
+            {RECEPTION_ROLES.has(role ?? '') && (
+              <NavLink href="/reception/history" isActive={active('/reception/history')}>จัดการการจอง</NavLink>
+            )}
+          </nav>
+        </div>
 
         {/* Profile menu */}
         <div className="relative" ref={menuRef}>

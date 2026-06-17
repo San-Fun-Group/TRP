@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { BOOKING_ROLES, UPDATE_ROLES } from '@/lib/constants/roles'
 
-export type BookingStatus  = 'new' | 'confirmed' | 'checked_out' | 'cancelled'
+export type BookingStatus  = 'new' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled'
 export type PaymentStatus  = 'pending' | 'paid'
 
 // Price snapshot fields are intentionally excluded — the server re-fetches
@@ -57,8 +57,8 @@ export async function createBooking(payload: BookingPayload): Promise<{ error: s
     discount_percent_at_booking: discount?.percent ?? 0,
     status:                      'new',
     payment_status:              'pending',
-    created_by:                  user.id,
-    updated_by:                  user.id,
+    created_by:                  null,
+    updated_by:                  null,
   })
 
   if (error) {
@@ -82,7 +82,7 @@ export async function updateBookingStatus(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   // Reset cleaning status when guest checks out so housekeeping knows the room needs cleaning
-  const patch: Record<string, unknown> = { status, updated_by: user.id }
+  const patch: Record<string, unknown> = { status, updated_by: null }
   if (status === 'checked_out') patch.cleaning_type_id = null
 
   const { error } = await supabase.from('bookings')
@@ -90,9 +90,9 @@ export async function updateBookingStatus(
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/admin')
-  revalidatePath('/admin/bookings')
-  revalidatePath(`/admin/bookings/${id}`)
+  revalidatePath('/reception')
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   revalidatePath('/housekeeping')
   return { error: null }
 }
@@ -114,12 +114,12 @@ export async function updateGuestInfo(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   const { error } = await supabase.from('bookings')
-    .update({ ...data, updated_by: user.id })
+    .update({ ...data, updated_by: null })
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/admin/bookings')
-  revalidatePath(`/admin/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   return { error: null }
 }
 
@@ -134,13 +134,13 @@ export async function updatePaymentStatus(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   const { error } = await supabase.from('bookings')
-    .update({ payment_status: paymentStatus, updated_by: user.id })
+    .update({ payment_status: paymentStatus, updated_by: null })
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/admin')
-  revalidatePath('/admin/bookings')
-  revalidatePath(`/admin/bookings/${id}`)
+  revalidatePath('/reception')
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   return { error: null }
 }
 
@@ -155,12 +155,66 @@ export async function assignRoom(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   const { error } = await supabase.from('bookings')
-    .update({ room_id: roomId, updated_by: user.id })
+    .update({ room_id: roomId, updated_by: null })
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/admin/bookings')
-  revalidatePath(`/admin/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
+  return { error: null }
+}
+
+export async function checkInBooking(
+  id: string,
+  roomId: string,
+): Promise<{ error: string | null }> {
+  if (!roomId) return { error: 'กรุณาเลือกห้อง' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  // The trigger only enforces room_type-level capacity, not a specific
+  // physical room — guard against double-assigning an occupied room here.
+  const { count: occupied } = await supabase
+    .from('bookings')
+    .select('*', { count: 'exact', head: true })
+    .eq('room_id', roomId)
+    .eq('status', 'checked_in')
+    .neq('id', id)
+
+  if (occupied && occupied > 0) return { error: 'ห้องนี้มีผู้เข้าพักอยู่แล้ว' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ status: 'checked_in', room_id: roomId, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/reception')
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
+  revalidatePath('/housekeeping')
+  return { error: null }
+}
+
+export async function updateExtraBeds(
+  id: string,
+  extraBeds: number,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ extra_beds: extraBeds, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/reception/history')
   return { error: null }
 }
 
@@ -177,11 +231,11 @@ export async function assignDoctor(
   if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
 
   const { error } = await supabase.from('bookings')
-    .update({ doctor_id: doctorId, updated_by: user.id })
+    .update({ doctor_id: doctorId, updated_by: null })
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/admin/bookings')
-  revalidatePath(`/admin/bookings/${id}`)
+  revalidatePath('/reception/history')
+  revalidatePath(`/reception/history/${id}`)
   return { error: null }
 }
