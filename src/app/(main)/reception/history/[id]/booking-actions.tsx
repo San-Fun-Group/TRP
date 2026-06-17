@@ -206,7 +206,7 @@ export function BookingActions({
               />
             )}
             <ActionBtn
-              label="ยกเลิกการจอง"
+              label="ยกเลิก"
               color="#C0392B"
               disabled={isPending}
               onClick={() => act(() => updateBookingStatus(bookingId, 'cancelled'))}

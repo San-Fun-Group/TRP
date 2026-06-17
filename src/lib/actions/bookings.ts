@@ -199,6 +199,25 @@ export async function checkInBooking(
   return { error: null }
 }
 
+export async function updateExtraBeds(
+  id: string,
+  extraBeds: number,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ไม่ได้เข้าสู่ระบบ' }
+  const role = user.app_metadata?.role as string | undefined
+  if (!UPDATE_ROLES.has(role ?? '')) return { error: 'ไม่มีสิทธิ์' }
+
+  const { error } = await supabase.from('bookings')
+    .update({ extra_beds: extraBeds, updated_by: null })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/reception/history')
+  return { error: null }
+}
+
 export async function assignDoctor(
   id: string,
   doctorId: string,
