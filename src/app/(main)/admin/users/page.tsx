@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { listUsers, createUser, updateUserRole, deleteUser, type AppRole } from '@/lib/actions/users'
+import { listUsers, createUser, updateUserRole, deleteUser } from '@/lib/actions/users'
+
+type AppRole = 'super_admin' | 'admin' | 'reception' | 'agent' | 'housekeeping'
 
 const ROLE_LABEL: Record<string, string> = {
   super_admin:  'Super Admin',
@@ -28,6 +30,20 @@ const ROLE_DESC: Record<string, string> = {
 
 const ALL_ROLES: AppRole[] = ['super_admin', 'admin', 'reception', 'agent', 'housekeeping']
 
+const ROLE_RANK: Record<string, number> = {
+  super_admin:  4,
+  admin:        3,
+  reception:    2,
+  agent:        1,
+  housekeeping: 0,
+}
+
+// super_admin can manage anyone; others only manage users with strictly lower rank
+function canManage(myRole: string, targetRole: string): boolean {
+  if (myRole === 'super_admin') return true
+  return (ROLE_RANK[myRole] ?? -1) > (ROLE_RANK[targetRole] ?? -1)
+}
+
 interface User { id: string; email: string; role: string; created_at: string; last_sign_in_at: string | null }
 
 function thaiDate(iso: string) {
@@ -48,11 +64,10 @@ export default function UsersPage() {
   // Create form state
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole]         = useState<AppRole>('reception')
+  const [role, setRole]         = useState<AppRole>('agent')
 
-  const isSuperAdmin = currentRole === 'super_admin'
-  // Admins can assign any role except super_admin (server enforces this too)
-  const assignableRoles = isSuperAdmin ? ALL_ROLES : ALL_ROLES.filter(r => r !== 'super_admin')
+  // Only roles strictly below your own rank are assignable (super_admin can assign any role)
+  const assignableRoles = ALL_ROLES.filter(r => canManage(currentRole, r))
 
   async function load() {
     try {
@@ -223,47 +238,68 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {users.map(u => (
-              <tr key={u.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
-                <td className="py-3 pr-4 text-sm" style={{ color: 'var(--text)' }}>{u.email}</td>
-                <td className="py-3 pr-4">
-                  <select
-                    key={u.id + '-' + u.role}
-                    defaultValue={u.role}
-                    disabled={isPending}
-                    onChange={e => handleRoleChange(u.id, e.target.value as AppRole)}
-                    className="text-xs px-2 py-1 rounded"
-                    style={{
-                      border: `1px solid ${ROLE_COLOR[u.role] ?? '#AAA'}40`,
-                      backgroundColor: `${ROLE_COLOR[u.role] ?? '#AAA'}18`,
-                      color: ROLE_COLOR[u.role] ?? '#AAA',
-                    }}
-                  >
-                    {assignableRoles.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-                    {/* Show current role even if not in assignable list (e.g. super_admin viewing another super_admin) */}
-                    {!assignableRoles.includes(u.role as AppRole) && (
-                      <option value={u.role}>{ROLE_LABEL[u.role] ?? u.role}</option>
+            {users.map(u => {
+              const manageable = canManage(currentRole, u.role)
+              const color = ROLE_COLOR[u.role] ?? '#AAA'
+              return (
+                <tr key={u.id} style={{ borderBottom: '1px solid var(--border-soft)', opacity: manageable ? 1 : 0.65 }}>
+                  <td className="py-3 pr-4 text-sm" style={{ color: 'var(--text)' }}>{u.email}</td>
+                  <td className="py-3 pr-4">
+                    {manageable ? (
+                      <select
+                        key={u.id + '-' + u.role}
+                        defaultValue={u.role}
+                        disabled={isPending}
+                        onChange={e => handleRoleChange(u.id, e.target.value as AppRole)}
+                        className="text-xs px-2 py-1 rounded"
+                        style={{
+                          border: `1px solid ${color}40`,
+                          backgroundColor: `${color}18`,
+                          color,
+                        }}
+                      >
+                        {assignableRoles.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                        {!assignableRoles.includes(u.role as AppRole) && (
+                          <option value={u.role}>{ROLE_LABEL[u.role] ?? u.role}</option>
+                        )}
+                      </select>
+                    ) : (
+                      <span
+                        className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded select-none"
+                        style={{ border: `1px solid ${color}30`, backgroundColor: `${color}10`, color }}
+                        title="ไม่มีสิทธิ์แก้ไขผู้ใช้ที่มีสิทธิ์เท่ากันหรือสูงกว่า"
+                      >
+                        <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true">
+                          <rect x="1" y="5" width="8" height="7" rx="1.5" fill="currentColor" opacity=".35"/>
+                          <path d="M3 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+                        </svg>
+                        {ROLE_LABEL[u.role] ?? u.role}
+                      </span>
                     )}
-                  </select>
-                </td>
-                <td className="py-3 pr-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {thaiDate(u.created_at)}
-                </td>
-                <td className="py-3 pr-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {u.last_sign_in_at ? thaiDate(u.last_sign_in_at) : '—'}
-                </td>
-                <td className="py-3">
-                  <button
-                    disabled={isPending}
-                    onClick={() => handleDelete(u.id, u.email)}
-                    className="text-xs px-2 py-1 rounded transition-opacity disabled:opacity-40"
-                    style={{ backgroundColor: '#C0392B18', color: '#C0392B' }}
-                  >
-                    ลบ
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="py-3 pr-4 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {thaiDate(u.created_at)}
+                  </td>
+                  <td className="py-3 pr-4 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {u.last_sign_in_at ? thaiDate(u.last_sign_in_at) : '—'}
+                  </td>
+                  <td className="py-3">
+                    {manageable ? (
+                      <button
+                        disabled={isPending}
+                        onClick={() => handleDelete(u.id, u.email)}
+                        className="text-xs px-2 py-1 rounded transition-opacity disabled:opacity-40"
+                        style={{ backgroundColor: '#C0392B18', color: '#C0392B' }}
+                      >
+                        ลบ
+                      </button>
+                    ) : (
+                      <span className="text-xs px-2 py-1" style={{ color: 'var(--text-light)' }}>—</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
             {!users.length && !loadErr && (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-sm" style={{ color: 'var(--text-light)' }}>

@@ -20,6 +20,7 @@ interface Props {
   bookingId:      string
   status:         BookingStatus
   paymentStatus:  PaymentStatus
+  totalPrice:     number
   roomId:         string | null
   doctorId:       string
   rooms:          Room[]
@@ -32,11 +33,12 @@ interface Props {
 }
 
 export function BookingActions({
-  bookingId, status, paymentStatus, roomId, doctorId, rooms, doctors,
+  bookingId, status, paymentStatus, totalPrice, roomId, doctorId, rooms, doctors,
   guestName, email, guestCount, extraBeds, needsCaretaker,
 }: Props) {
   const [isPending, startTransition] = useTransition()
   const [error, setError]            = useState<string | null>(null)
+  const [showPayModal, setShowPayModal] = useState(false)
 
   const [selectedRoom,   setSelectedRoom]   = useState(roomId ?? '')
   const [selectedDoctor, setSelectedDoctor] = useState(doctorId)
@@ -235,7 +237,7 @@ export function BookingActions({
               label="บันทึกรับชำระเงิน"
               color="#2E7D5E"
               disabled={isPending}
-              onClick={() => act(() => updatePaymentStatus(bookingId, 'paid'))}
+              onClick={() => setShowPayModal(true)}
             />
           ) : (
             <ActionBtn
@@ -247,6 +249,53 @@ export function BookingActions({
           )
         )}
       </Section>
+
+      {/* Payment modal */}
+      {showPayModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowPayModal(false)}
+        >
+          <div
+            className="card w-full max-w-sm p-6 space-y-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '1.5rem', fontWeight: 400, color: 'var(--primary)' }}>
+              รับชำระเงิน
+            </h2>
+            <div className="py-4 text-center" style={{ borderTop: '1px solid var(--border-soft)', borderBottom: '1px solid var(--border-soft)' }}>
+              <p className="text-xs mb-1" style={{ color: 'var(--text-light)' }}>ยอดที่ต้องชำระ</p>
+              <p style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--primary)' }}>
+                {totalPrice.toLocaleString()} ฿
+              </p>
+            </div>
+            <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
+              ยืนยันการรับชำระเงินจากผู้เข้าพัก
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="flex-1 text-sm px-4 py-2.5 rounded font-medium"
+                style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+              >
+                ยกเลิก
+              </button>
+              <button
+                disabled={isPending}
+                onClick={() => {
+                  setShowPayModal(false)
+                  act(() => updatePaymentStatus(bookingId, 'paid'))
+                }}
+                className="flex-1 text-sm px-4 py-2.5 rounded font-medium transition-opacity disabled:opacity-40"
+                style={{ backgroundColor: '#2E7D5E', color: '#fff' }}
+              >
+                ยืนยันรับเงิน
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Room assignment */}
       <Section title="ห้องพัก">
