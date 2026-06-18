@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { RoomBoard } from './reception-room-board'
-import { CheckInQueue } from './reception-checkin-queue'
+import { ReceptionTabs } from './reception-tabs'
 
 export default async function ReceptionPage() {
   const supabase = await createClient()
@@ -34,7 +33,7 @@ export default async function ReceptionPage() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <h1 className="leading-tight mb-1"
             style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
@@ -59,34 +58,13 @@ export default async function ReceptionPage() {
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-start">
+      <ReceptionTabs
+        rooms={rooms ?? []}
+        inHouse={inHouse ?? []}
+        arrivals={arrivals ?? []}
+        vacantRooms={vacantRooms}
+      />
 
-        {/* Left — Room board */}
-        <section>
-          <h2 className="text-xs font-medium tracking-widest uppercase mb-4"
-            style={{ color: 'var(--text-light)' }}>
-            ห้องพัก
-          </h2>
-          <RoomBoard
-            rooms={rooms ?? []}
-            inHouse={inHouse ?? []}
-          />
-        </section>
-
-        {/* Right — Check-in queue */}
-        <section>
-          <h2 className="text-xs font-medium tracking-widest uppercase mb-4"
-            style={{ color: 'var(--text-light)' }}>
-            รอการเช็คอิน
-          </h2>
-          <CheckInQueue
-            arrivals={arrivals ?? []}
-            vacantRooms={vacantRooms}
-          />
-        </section>
-
-      </div>
     </div>
   )
 }

@@ -159,7 +159,7 @@ export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
       )}
 
       {/* Form — always visible on desktop, hidden on mobile when confirming */}
-      <div className={`lg:grid lg:grid-cols-[1fr_300px] lg:gap-6 lg:items-start${isConfirming ? ' hidden lg:grid' : ''}`}>
+      <div className={`lg:grid lg:grid-cols-[1fr_300px] lg:gap-10${isConfirming ? ' hidden lg:grid' : ''}`}>
 
         {/* Left: form sections */}
         <div className="space-y-5">
@@ -300,9 +300,10 @@ export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
           )}
         </div>
 
-        {/* Right: sticky summary (desktop only) */}
-        <div className="hidden lg:block sticky top-20">
-          <div className="card p-5 space-y-4">
+        {/* Right: sticky summary (desktop only) — grid item stretches to full
+            form height, the card inside sticks within it as you scroll */}
+        <div className="hidden lg:block">
+          <div className="sticky top-20 card p-5 space-y-4">
             <h3 className="text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--text-light)' }}>
               สรุปการจอง
             </h3>
