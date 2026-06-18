@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 
 const STATUS_OPTS = [
   { label: 'ทุกสถานะ',    value: '' },
-  { label: 'ใหม่',        value: 'new' },
+  { label: 'รอเช็คอิน',   value: 'new' },
   { label: 'เช็คอินแล้ว', value: 'checked_in' },
   { label: 'เช็คเอาท์',   value: 'checked_out' },
   { label: 'ยกเลิก',      value: 'cancelled' },

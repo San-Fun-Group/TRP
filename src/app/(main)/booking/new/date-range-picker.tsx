@@ -194,15 +194,15 @@ export function DateRangePicker({ checkin, checkout, onCheckin, onCheckout }: Pr
               style={{ color: 'var(--primary)' }}>›</button>
           </div>
 
-          {/* Two months side by side */}
-          <div className="grid grid-cols-2 gap-6">
-            {months.map(({ year, month }) => {
+          {/* One month on mobile, two on desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {months.map(({ year, month }, monthIdx) => {
               const days    = new Date(year, month + 1, 0).getDate()
               const startDOW = new Date(year, month, 1).getDay()
               const cells   = [...Array(startDOW).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)]
 
               return (
-                <div key={`${year}-${month}`}>
+                <div key={`${year}-${month}`} className={monthIdx === 1 ? 'hidden sm:block' : ''}>
                   {/* Day-of-week header */}
                   <div className="grid grid-cols-7 mb-0.5">
                     {DAYS.map(d => (
