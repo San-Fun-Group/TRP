@@ -1,5 +1,5 @@
 export const STATUS_LABEL: Record<string, string> = {
-  new:         'ใหม่',
+  new:         'รอเช็คอิน',
   confirmed:   'ยืนยันแล้ว',
   checked_in:  'เช็คอินแล้ว',
   checked_out: 'เช็คเอาท์',

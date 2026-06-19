@@ -55,74 +55,130 @@ export function CheckInQueue({
           <p className="text-sm" style={{ color: 'var(--text-light)' }}>ไม่มีรายการรอเช็คอิน</p>
         </div>
       ) : (
-        <div className="card overflow-x-auto px-5 pt-3 pb-2">
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['ชื่อ', 'ประเภทห้อง', 'เช็คอิน', 'เช็คเอาท์', 'เลือกห้อง', 'เตียงเสริม', 'การชำระเงิน', ''].map(h => (
-                  <th key={h} className="text-left pb-2 pr-3 font-medium text-xs tracking-wide whitespace-nowrap"
-                    style={{ color: 'var(--text-light)' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(b => {
-                const roomTypeName  = joinRow<{ name: string }>(b.room_types)?.name ?? '—'
-                const availableRooms = vacantRooms.filter(r => r.room_type_id === b.room_type_id)
-                const overdue       = b.checkin_date < today
-                return (
-                  <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
+        <>
+          {/* Desktop table */}
+          <div className="card hidden md:block overflow-x-auto px-5 pt-3 pb-2">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {['ชื่อ', 'ประเภทห้อง', 'เช็คอิน', 'เช็คเอาท์', 'เลือกห้อง', 'เตียงเสริม', 'การชำระเงิน', ''].map(h => (
+                    <th key={h} className="text-left pb-2 pr-3 font-medium text-xs tracking-wide whitespace-nowrap"
+                      style={{ color: 'var(--text-light)' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(b => {
+                  const roomTypeName  = joinRow<{ name: string }>(b.room_types)?.name ?? '—'
+                  const availableRooms = vacantRooms.filter(r => r.room_type_id === b.room_type_id)
+                  const overdue       = b.checkin_date < today
+                  return (
+                    <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
 
-                    <td className="py-3 pr-3" style={{ minWidth: '100px' }}>
+                      <td className="py-3 pr-3" style={{ minWidth: '100px' }}>
+                        <Link href={`/reception/history/${b.id}`}
+                          className="font-medium hover:underline text-xs block truncate"
+                          style={{ color: 'var(--primary)' }}>
+                          {b.guest_name}
+                        </Link>
+                        {overdue && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                            style={{ backgroundColor: '#C0392B18', color: '#C0392B' }}>
+                            ค้างเช็คอิน
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3 pr-3 text-xs whitespace-nowrap" style={{ color: 'var(--text)' }}>
+                        {roomTypeName}
+                      </td>
+
+                      <td className="py-3 pr-3 text-xs whitespace-nowrap" style={{ color: 'var(--text)', width: '1px' }}>
+                        {thaiDate(b.checkin_date)}
+                      </td>
+
+                      <td className="py-3 pr-3 text-xs whitespace-nowrap" style={{ color: 'var(--text)', width: '1px' }}>
+                        {thaiDate(b.checkout_date)}
+                      </td>
+
+                      <td className="py-3 pr-3">
+                        <ReceptionCheckIn bookingId={b.id} availableRooms={availableRooms} />
+                      </td>
+
+                      <td className="py-3 pr-3">
+                        <ExtraBedsSelect bookingId={b.id} value={b.extra_beds ?? 0} />
+                      </td>
+
+                      <td className="py-3 pr-3">
+                        <PayToggle id={b.id} paid={b.payment_status === 'paid'} />
+                      </td>
+
+                      <td className="py-3">
+                        <CancelButton id={b.id} />
+                      </td>
+
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.map(b => {
+              const roomTypeName   = joinRow<{ name: string }>(b.room_types)?.name ?? '—'
+              const availableRooms = vacantRooms.filter(r => r.room_type_id === b.room_type_id)
+              const overdue        = b.checkin_date < today
+              return (
+                <div key={b.id} className="card p-4 space-y-3">
+
+                  {/* Guest name + payment status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <Link href={`/reception/history/${b.id}`}
-                        className="font-medium hover:underline text-xs block truncate"
+                        className="font-medium text-sm hover:underline block truncate"
                         style={{ color: 'var(--primary)' }}>
                         {b.guest_name}
                       </Link>
                       {overdue && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                        <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full"
                           style={{ backgroundColor: '#C0392B18', color: '#C0392B' }}>
                           ค้างเช็คอิน
                         </span>
                       )}
-                    </td>
+                    </div>
+                    <PayToggle id={b.id} paid={b.payment_status === 'paid'} />
+                  </div>
 
-                    <td className="py-3 pr-3 text-xs whitespace-nowrap" style={{ color: 'var(--text)' }}>
-                      {roomTypeName}
-                    </td>
+                  {/* Room type + dates */}
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {roomTypeName} · {thaiDate(b.checkin_date)} – {thaiDate(b.checkout_date)}
+                  </p>
 
-                    <td className="py-3 pr-3 text-xs whitespace-nowrap" style={{ color: 'var(--text)', width: '1px' }}>
-                      {thaiDate(b.checkin_date)}
-                    </td>
-
-                    <td className="py-3 pr-3 text-xs whitespace-nowrap" style={{ color: 'var(--text)', width: '1px' }}>
-                      {thaiDate(b.checkout_date)}
-                    </td>
-
-                    <td className="py-3 pr-3">
+                  {/* Check-in action + extra beds */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex-1 min-w-0">
                       <ReceptionCheckIn bookingId={b.id} availableRooms={availableRooms} />
-                    </td>
-
-                    <td className="py-3 pr-3">
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-xs" style={{ color: 'var(--text-light)' }}>เตียง</span>
                       <ExtraBedsSelect bookingId={b.id} value={b.extra_beds ?? 0} />
-                    </td>
+                    </div>
+                  </div>
 
-                    <td className="py-3 pr-3">
-                      <PayToggle id={b.id} paid={b.payment_status === 'paid'} />
-                    </td>
+                  {/* Cancel */}
+                  <div className="text-right">
+                    <CancelButton id={b.id} />
+                  </div>
 
-                    <td className="py-3">
-                      <CancelButton id={b.id} />
-                    </td>
-
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
     </div>
   )

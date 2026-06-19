@@ -17,22 +17,13 @@ export default async function NewBookingPage() {
   ])
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl lg:max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1
-          className="mb-1"
-          style={{
-            fontFamily: 'var(--font-cormorant, serif)',
-            fontSize: '2rem',
-            fontWeight: 400,
-            color: 'var(--primary)',
-          }}
-        >
+        <h1 className="mb-1"
+          style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
           จอง IPD
         </h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          New IPD Hotel Reservation
-        </p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>ห้องพักผู้ป่วยใน</p>
       </div>
 
       <BookingForm

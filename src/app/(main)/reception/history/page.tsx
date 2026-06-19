@@ -153,6 +153,7 @@ export default async function BookingHistoryPage({
                   const roomName    = joinRow<{ name: string }>(b.rooms)?.name
                     ?? joinRow<{ name: string }>(b.room_types)?.name ?? '—'
                   const cancellable = b.status === 'new' && b.checkout_date >= today
+                  const past        = b.status === 'checked_out' || b.status === 'cancelled'
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
 
@@ -177,9 +178,12 @@ export default async function BookingHistoryPage({
                         {b.total_price?.toLocaleString()} ฿
                       </td>
 
-                      {/* Extra beds — auto-save on change */}
+                      {/* Extra beds — read-only for past bookings */}
                       <td className="py-3 pr-3">
-                        <ExtraBedsSelect bookingId={b.id} value={b.extra_beds ?? 0} />
+                        {past
+                          ? <span className="text-xs" style={{ color: 'var(--text-light)' }}>{b.extra_beds ?? 0}</span>
+                          : <ExtraBedsSelect bookingId={b.id} value={b.extra_beds ?? 0} />
+                        }
                       </td>
 
                       <td className="py-3 pr-3">
@@ -223,6 +227,7 @@ export default async function BookingHistoryPage({
               const roomName    = joinRow<{ name: string }>(b.rooms)?.name
                 ?? joinRow<{ name: string }>(b.room_types)?.name ?? '—'
               const cancellable = b.status === 'new' && b.checkout_date >= today
+              const past        = b.status === 'checked_out' || b.status === 'cancelled'
               return (
                 <div key={b.id} className="card p-4 space-y-3"
                   style={{ borderLeft: `3px solid ${STATUS_COLOR[b.status] ?? '#AAA'}` }}>
@@ -246,7 +251,10 @@ export default async function BookingHistoryPage({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs" style={{ color: 'var(--text-light)' }}>เตียง</span>
-                      <ExtraBedsSelect bookingId={b.id} value={b.extra_beds ?? 0} />
+                      {past
+                        ? <span className="text-xs" style={{ color: 'var(--text-light)' }}>{b.extra_beds ?? 0}</span>
+                        : <ExtraBedsSelect bookingId={b.id} value={b.extra_beds ?? 0} />
+                      }
                       <PayButton id={b.id} paid={b.payment_status === 'paid'} />
                     </div>
                   </div>
@@ -256,7 +264,7 @@ export default async function BookingHistoryPage({
                       <input type="hidden" name="id" value={b.id} />
                       <button type="submit" className="text-xs transition-opacity hover:opacity-70"
                         style={{ color: '#C0392B' }}>
-                        ยกเลิกการจอง
+                        ยกเลิก
                       </button>
                     </form>
                   )}

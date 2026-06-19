@@ -27,7 +27,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       style={{ fontFamily: 'var(--font-dm-sans, sans-serif)', backgroundColor: 'var(--bg)' }}
     >
       <NavBar role={role} email={user.email} />
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {children}
       </main>
     </div>
