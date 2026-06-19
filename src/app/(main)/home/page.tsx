@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { STATUS_LABEL, STATUS_COLOR } from '@/lib/constants/booking'
 import { thaiDate } from '@/lib/utils/date'
 import { joinRow } from '@/lib/utils/supabase'
+import { OccupancyView } from './occupancy-view'
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T12:00:00Z')
@@ -13,151 +14,110 @@ function addDays(dateStr: string, n: number): string {
 export default async function HomePage() {
   const supabase = await createClient()
 
-  const today    = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
-  const end14    = addDays(today, 14)
+  // today must be computed inside the component (stale-at-midnight gotcha)
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
+  const WINDOW_DAYS  = 90   // client cursor navigates within this window
+  const RECENT_LIMIT = 8    // only the latest few bookings
+  const endWindow = addDays(today, WINDOW_DAYS)
 
   const [
-    { count: totalRooms },
-    { count: occupiedToday },
+    { data: roomTypes },
+    { data: rooms },
+    { data: typeBookings },
+    { data: currentOcc },
     { data: recentBookings },
-    { data: roomTypesWithCount },
-    { data: upcomingBookings },
   ] = await Promise.all([
-    supabase.from('rooms').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('bookings').select('*', { count: 'exact', head: true })
-      .neq('status', 'cancelled').lte('checkin_date', today).gt('checkout_date', today),
-    supabase.from('bookings')
-      .select(`id, guest_name, checkin_date, checkout_date, nights, total_price, status, payment_status, room_types(name), rooms(name)`)
-      .order('created_at', { ascending: false })
-      .limit(10),
-    supabase.from('room_types')
-      .select('id, name, rooms(id)')
-      .eq('is_active', true)
-      .order('name'),
+    supabase.from('room_types').select('id, name').eq('is_active', true).order('name'),
+    supabase.from('rooms').select('id, name, room_type_id').eq('is_active', true).order('name'),
+    // aggregate occupancy by room TYPE across the window (section 1)
     supabase.from('bookings')
       .select('room_type_id, checkin_date, checkout_date')
       .neq('status', 'cancelled')
-      .lt('checkin_date', end14)
+      .lt('checkin_date', endWindow)
       .gt('checkout_date', today),
+    // who is in each room RIGHT NOW (section 2) — incl. guests leaving today
+    supabase.from('bookings')
+      .select('guest_name, room_id, checkout_date')
+      .neq('status', 'cancelled')
+      .not('room_id', 'is', null)
+      .lte('checkin_date', today)
+      .gte('checkout_date', today),
+    supabase.from('bookings')
+      .select(`id, guest_name, checkin_date, checkout_date, nights, total_price, status, payment_status, room_types(name), rooms(name)`)
+      .order('created_at', { ascending: false })
+      .limit(RECENT_LIMIT),
   ])
 
-  const capacity  = totalRooms ?? 0
-  const occupied  = occupiedToday ?? 0
-  const available = capacity - occupied
+  const days  = Array.from({ length: WINDOW_DAYS }, (_, i) => addDays(today, i))
+  const roomList = (rooms ?? []) as { id: string; name: string; room_type_id: string }[]
 
-  // Build 14-day occupancy grid per room type
-  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i))
-  const calRows = (roomTypesWithCount ?? []).map(rt => {
-    const cap = Array.isArray(rt.rooms) ? (rt.rooms as { id: string }[]).length : 0
+  // Section 1 — available count per room TYPE across days
+  const typeRows = (roomTypes ?? []).map(t => {
+    const cap = roomList.filter(r => r.room_type_id === t.id).length
     const occ = days.map(day =>
-      (upcomingBookings ?? []).filter(b =>
-        b.room_type_id === rt.id && b.checkin_date <= day && b.checkout_date > day
+      (typeBookings ?? []).filter(b =>
+        b.room_type_id === t.id && b.checkin_date <= day && b.checkout_date > day
       ).length
     )
-    return { id: rt.id, name: rt.name, cap, occ }
+    return { id: t.id, name: t.name, cap, occ }
   }).filter(r => r.cap > 0)
+
+  // Section 2 — current occupant per room id (guests leaving today are flagged)
+const occByRoom: Record<string, { guest_name: string; checkout_date: string; leavingToday: boolean }> = {}
+  for (const o of currentOcc ?? []) {
+    if (!o.room_id) continue
+    const leavingToday = o.checkout_date === today
+    const existing = occByRoom[o.room_id]
+    // prefer a staying guest over one who is leaving today (room turnover edge case)
+    if (!existing || (existing.leavingToday && !leavingToday)) {
+      occByRoom[o.room_id] = { guest_name: o.guest_name, checkout_date: o.checkout_date, leavingToday }
+    }
+  }
 
   return (
     <div className="space-y-8">
 
       {/* Page heading */}
-      <div>
-        <h1 className="leading-tight mb-1"
-          style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
-          หน้าหลัก
-        </h1>
-        <p className="text-sm" style={{ color: 'var(--text-light)' }}>
-          {new Date().toLocaleDateString('th-TH', {
-            timeZone: 'Asia/Bangkok', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-          })}
-        </p>
-      </div>
-
-      {/* Occupancy cards — purple identity, not gold */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard label="ห้องทั้งหมด"  value={capacity}  accent="var(--primary)" />
-        <StatCard label="มีผู้เข้าพัก" value={occupied}  accent="#C0392B" />
-        <StatCard label="ว่างวันนี้"   value={available} accent="var(--success)" />
-      </div>
-
-      {/* Single gold CTA */}
-      <div>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="leading-tight mb-1"
+            style={{ fontFamily: 'var(--font-cormorant, serif)', fontSize: '2rem', fontWeight: 400, color: 'var(--primary)' }}>
+            หน้าหลัก
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-light)' }}>
+            {new Date().toLocaleDateString('th-TH', {
+              timeZone: 'Asia/Bangkok', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            })}
+          </p>
+        </div>
         <Link href="/booking/new"
-          className="btn-gold inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium tracking-widest uppercase">
+          className="btn-gold inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium tracking-widest uppercase self-start sm:self-auto">
           + จอง IPD
         </Link>
       </div>
 
-      {/* 14-day occupancy calendar */}
-      {calRows.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--text-light)' }}>
-            ความจุ 14 วัน
-          </h2>
-          <div className="card overflow-x-auto p-4">
-            <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: '2px' }}>
-              <thead>
-                <tr>
-                  <th className="text-left pr-3 pb-2 font-medium whitespace-nowrap" style={{ color: 'var(--text-light)', minWidth: '90px' }}>
-                    ประเภทห้อง
-                  </th>
-                  {days.map(d => {
-                    const dt = new Date(d + 'T12:00:00Z')
-                    const isToday = d === today
-                    return (
-                      <th key={d} className="pb-2 text-center font-medium" style={{ minWidth: '32px', color: isToday ? 'var(--primary)' : 'var(--text-light)' }}>
-                        <div>{dt.toLocaleDateString('th-TH', { weekday: 'narrow' })}</div>
-                        <div style={{ fontWeight: isToday ? 700 : 400 }}>{dt.getUTCDate()}</div>
-                      </th>
-                    )
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {calRows.map(row => (
-                  <tr key={row.id}>
-                    <td className="pr-3 py-0.5 font-medium whitespace-nowrap" style={{ color: 'var(--text)' }}>
-                      {row.name}
-                      <span className="ml-1 font-normal" style={{ color: 'var(--text-light)' }}>/{row.cap}</span>
-                    </td>
-                    {row.occ.map((count, i) => {
-                      const pct  = row.cap > 0 ? count / row.cap : 0
-                      const full = count >= row.cap
-                      const bg   = full      ? '#C0392B' :
-                                   pct >= .75 ? '#E67E22' :
-                                   pct >= .5  ? '#C4A26A' :
-                                   pct > 0    ? '#2E7D5E' : 'var(--border)'
-                      const fg   = pct > 0 ? '#fff' : 'var(--text-light)'
-                      return (
-                        <td key={i} className="text-center py-0.5">
-                          <div className="inline-flex items-center justify-center rounded text-xs"
-                            style={{ backgroundColor: bg, color: fg, width: '28px', height: '22px', fontSize: '10px' }}>
-                            {count > 0 ? count : ''}
-                          </div>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="flex gap-4 mt-3 pt-3" style={{ borderTop: '1px solid var(--border-soft)' }}>
-              {[['#2E7D5E','1–49%'],['#C4A26A','50–74%'],['#E67E22','75–99%'],['#C0392B','100% (เต็ม)']].map(([c,l]) => (
-                <div key={l} className="flex items-center gap-1.5">
-                  <div className="w-4 h-3 rounded" style={{ backgroundColor: c }} />
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{l}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Sections 1 & 2 — type availability board + room cards for selected type */}
+      <OccupancyView
+        typeRows={typeRows}
+        rooms={roomList}
+        occByRoom={occByRoom}
+        days={days}
+        today={today}
+      />
 
-      {/* Recent bookings */}
+      {/* ── Section 3 — recent bookings ────────────────────────────── */}
       <section>
-        <h2 className="mb-4 text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--text-light)' }}>
-          การจองล่าสุด
-        </h2>
+        <div className="rounded-lg px-4 py-2.5 mb-3 flex items-center justify-between gap-2"
+          style={{ background: 'rgba(147,136,176,0.18)' }}>
+          <h2 className="text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--primary)' }}>
+            การจองล่าสุด
+          </h2>
+          <Link href="/reception/history"
+            className="text-[11px] px-3 py-1 rounded-full font-medium transition-opacity hover:opacity-70"
+            style={{ color: 'var(--primary)', border: '1px solid var(--border-soft)' }}>
+            ประวัติการจอง →
+          </Link>
+        </div>
 
         {!recentBookings?.length ? (
           <p className="text-sm" style={{ color: 'var(--text-light)' }}>ยังไม่มีการจอง</p>
@@ -227,16 +187,6 @@ export default async function HomePage() {
           </>
         )}
       </section>
-    </div>
-  )
-}
-
-function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
-  return (
-    <div className="card p-5" style={{ borderLeft: `3px solid ${accent}` }}>
-      <div className="text-3xl font-light mb-1"
-        style={{ fontFamily: 'var(--font-cormorant, serif)', color: accent }}>{value}</div>
-      <div className="text-xs tracking-wide" style={{ color: 'var(--text-muted)' }}>{label}</div>
     </div>
   )
 }
