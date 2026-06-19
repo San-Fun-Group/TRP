@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -83,6 +83,20 @@ export default function SettingsContent({
   const [pending, startTransition] = useTransition()
   const router = useRouter()
 
+  const [tabOpen, setTabOpen] = useState(false)
+  const tabDropRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!tabOpen) return
+    function onDown(e: MouseEvent) {
+      if (tabDropRef.current && !tabDropRef.current.contains(e.target as Node)) {
+        setTabOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [tabOpen])
+
   function open(state: NonNullable<ModalState>) {
     setModalError(null)
     setModal(state)
@@ -94,7 +108,7 @@ export default function SettingsContent({
   }
 
   function handleSubmit(action: (fd: FormData) => Promise<{ error?: string }>) {
-    return (e: React.FormEvent<HTMLFormElement>) => {
+    return (e: React.SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault()
       setModalError(null)
       const fd = new FormData(e.currentTarget)
@@ -118,11 +132,48 @@ export default function SettingsContent({
 
   return (
     <>
-      <div className="flex flex-col md:flex-row gap-6 items-start">
+      {/* Mobile: custom tab dropdown */}
+      <div className="md:hidden mb-4 relative" ref={tabDropRef}>
+        <button
+          type="button"
+          onClick={() => setTabOpen(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm rounded-xl"
+          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }}>
+          <span style={{ fontWeight: 500, color: 'var(--primary)' }}>
+            {TABS.find(t => t.value === tab)?.label ?? tab}
+          </span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"
+            style={{ color: 'var(--text-muted)', transform: tabOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+            <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        {tabOpen && (
+          <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-xl overflow-hidden"
+            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid var(--border)', backgroundColor: 'var(--surface)' }}>
+            {TABS.map(t => {
+              const active = tab === t.value
+              return (
+                <button key={t.value} type="button"
+                  onClick={() => { router.push(`/admin/settings?tab=${t.value}`); setTabOpen(false) }}
+                  className="w-full text-left px-4 py-3 text-sm transition-colors"
+                  style={{
+                    backgroundColor: active ? 'rgba(82,58,133,0.09)' : 'transparent',
+                    color: active ? 'var(--primary)' : 'var(--text-muted)',
+                    fontWeight: active ? 500 : 400,
+                  }}>
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
-        {/* ── Sidebar ── */}
-        <aside className="w-full md:w-44 shrink-0">
-          <nav className="card p-1.5 flex md:flex-col flex-row gap-0.5 overflow-x-auto">
+      <div className="flex md:flex-row gap-6 items-start">
+
+        {/* ── Sidebar (desktop only) ── */}
+        <aside className="hidden md:block w-44 shrink-0">
+          <nav className="card p-1.5 flex flex-col gap-0.5">
             {TABS.map(t => {
               const active = tab === t.value
               return (
@@ -645,16 +696,18 @@ function GhostBtn({
 
 function ToggleBtn({ active }: { active: boolean }) {
   return (
-    <button type="submit" style={{
-      background: 'none',
-      border: `1px solid ${active ? 'rgba(192,57,43,0.28)' : 'rgba(46,125,94,0.3)'}`,
-      color: active ? '#C0392B' : '#2E7D5E',
-      borderRadius: '6px',
-      padding: '4px 10px',
-      fontSize: '12px',
-      fontWeight: 450,
-      cursor: 'pointer',
-    }}>
+    <button type="submit"
+      title={active ? 'ปิดใช้งานชั่วคราว (สามารถเปิดใหม่ได้)' : 'เปิดใช้งาน'}
+      style={{
+        background: 'none',
+        border: `1px solid ${active ? 'rgba(180,120,0,0.30)' : 'rgba(46,125,94,0.3)'}`,
+        color: active ? '#9A6F00' : '#2E7D5E',
+        borderRadius: '6px',
+        padding: '4px 10px',
+        fontSize: '12px',
+        fontWeight: 450,
+        cursor: 'pointer',
+      }}>
       {active ? 'ปิด' : 'เปิด'}
     </button>
   )
