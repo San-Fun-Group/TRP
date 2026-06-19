@@ -152,6 +152,7 @@ export default async function BookingDetailPage({
             bookingId={id}
             status={booking.status as BookingStatus}
             paymentStatus={booking.payment_status as PaymentStatus}
+            totalPrice={booking.total_price ?? 0}
             roomId={booking.room_id}
             doctorId={booking.doctor_id}
             rooms={rooms ?? []}
