@@ -1,5 +1,5 @@
 export const ADMIN_ROLES      = new Set(['super_admin', 'admin'])
 export const RECEPTION_ROLES  = new Set(['super_admin', 'admin', 'reception'])
-export const BOOKING_ROLES    = new Set(['super_admin', 'admin', 'reception', 'agent'])
+export const BOOKING_ROLES    = new Set(['super_admin', 'admin', 'reception', 'agent', 'housekeeping'])
 export const UPDATE_ROLES     = new Set(['super_admin', 'admin', 'reception'])
 export const HK_ROLES         = new Set(['super_admin', 'admin', 'housekeeping', 'reception'])

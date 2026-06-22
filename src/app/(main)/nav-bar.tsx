@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ADMIN_ROLES, BOOKING_ROLES, RECEPTION_ROLES } from '@/lib/constants/roles'
+import { ADMIN_ROLES, RECEPTION_ROLES } from '@/lib/constants/roles'
 
 interface Props { role: string | undefined; email: string | undefined }
 
@@ -59,9 +59,7 @@ export function NavBar({ role, email }: Props) {
           {/* Desktop nav links */}
           <nav className="hidden lg:flex items-center gap-1 mx-6 flex-1">
             <NavLink href="/home"         isActive={active('/home')}>หน้าหลัก</NavLink>
-            {BOOKING_ROLES.has(role ?? '') && (
-              <NavLink href="/booking/new" isActive={active('/booking')}>จอง IPD</NavLink>
-            )}
+            <NavLink href="/booking/new" isActive={active('/booking')}>จอง IPD</NavLink>
             {(role === 'housekeeping' || isAdmin) && (
               <NavLink href="/housekeeping" isActive={active('/housekeeping')}>Housekeeping</NavLink>
             )}
@@ -132,11 +130,9 @@ export function NavBar({ role, email }: Props) {
             <MobileNavLink href="/home" isActive={active('/home')} onClick={() => setNavOpen(false)}>
               หน้าหลัก
             </MobileNavLink>
-            {BOOKING_ROLES.has(role ?? '') && (
-              <MobileNavLink href="/booking/new" isActive={active('/booking')} onClick={() => setNavOpen(false)}>
-                จอง IPD
-              </MobileNavLink>
-            )}
+            <MobileNavLink href="/booking/new" isActive={active('/booking')} onClick={() => setNavOpen(false)}>
+              จอง IPD
+            </MobileNavLink>
             {(role === 'housekeeping' || isAdmin) && (
               <MobileNavLink href="/housekeeping" isActive={active('/housekeeping')} onClick={() => setNavOpen(false)}>
                 Housekeeping
