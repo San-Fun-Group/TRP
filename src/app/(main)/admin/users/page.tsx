@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { listUsers, createUser, updateUserRole, deleteUser } from '@/lib/actions/users'
+import { canManage } from '@/lib/utils/roles'
+import { thaiDate } from '@/lib/utils/date'
 
 type AppRole = 'super_admin' | 'admin' | 'reception' | 'agent' | 'housekeeping'
 
@@ -29,23 +31,9 @@ const ROLE_DESC: Record<string, string> = {
 
 const ALL_ROLES: AppRole[] = ['super_admin', 'admin', 'reception', 'agent', 'housekeeping']
 
-const ROLE_RANK: Record<string, number> = {
-  super_admin: 4, admin: 3, reception: 2, agent: 1, housekeeping: 0,
-}
-
-// super_admin can manage anyone; others only manage users with strictly lower rank
-function canManage(myRole: string, targetRole: string): boolean {
-  if (myRole === 'super_admin') return true
-  return (ROLE_RANK[myRole] ?? -1) > (ROLE_RANK[targetRole] ?? -1)
-}
 
 interface User { id: string; email: string; role: string; created_at: string; last_sign_in_at: string | null }
 
-function thaiDate(iso: string) {
-  return new Date(iso).toLocaleDateString('th-TH', {
-    timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', year: '2-digit',
-  })
-}
 
 export default function UsersPage() {
   const [users,       setUsers]       = useState<User[]>([])

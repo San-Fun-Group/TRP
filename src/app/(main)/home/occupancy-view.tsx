@@ -2,21 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { thaiDate } from '@/lib/utils/date'
+import { band } from '@/lib/utils/occupancy'
 
 interface TypeRow { id: string; name: string; cap: number; occ: number[] }
 interface Room    { id: string; name: string; room_type_id: string }
 interface OccRoom { guest_name: string; checkout_date: string; leavingToday: boolean }
 
 const MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
-
-function band(occ: number, cap: number): { bg: string; fg: string } {
-  if (cap === 0)   return { bg: 'var(--border)', fg: 'var(--text-light)' }
-  const pct = occ / cap
-  if (occ >= cap)  return { bg: '#AF4A39', fg: '#fff' }
-  if (pct >= 0.75) return { bg: '#DB6F30', fg: '#fff' }
-  if (pct >= 0.5)  return { bg: '#EEDA6B', fg: '#5a4a16' }
-  return { bg: '#8AB185', fg: '#fff' }
-}
 
 export function OccupancyView({
   typeRows, rooms, occByRoom, days, today,
