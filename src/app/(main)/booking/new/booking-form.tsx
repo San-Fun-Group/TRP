@@ -303,7 +303,7 @@ export function BookingForm({ roomTypes, staff, discounts, doctors }: Props) {
         {/* Right: sticky summary (desktop only) — grid item stretches to full
             form height, the card inside sticks within it as you scroll */}
         <div className="hidden lg:block">
-          <div className="sticky top-20 card p-5 space-y-4">
+          <div className="sticky top-20 card p-5 space-y-4 ml-5">
             <h3 className="text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--text-light)' }}>
               สรุปการจอง
             </h3>

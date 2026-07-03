@@ -81,7 +81,7 @@ export function NavBar({ role, email }: Props) {
               <button type="button" onClick={() => setMenuOpen(v => !v)}
                 className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full transition-colors"
                 style={{ backgroundColor: menuOpen ? 'rgba(255,255,255,0.12)' : 'transparent' }}>
-                <span className="hidden sm:block text-xs px-2 py-0.5 font-medium rounded-full truncate max-w-40"
+                <span className="hidden sm:block text-xs px-2 py-0.5 font-medium rounded-full w-fit"
                   style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.65)' }}>
                   {email ?? 'ไม่มีบัญชี'}
                 </span>
