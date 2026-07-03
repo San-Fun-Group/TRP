@@ -99,8 +99,11 @@ export default async function HousekeepingPage({
                   }}
                 >
                   <span>{tab.label}</span>
-                  <span className="text-xs rounded-full px-1.5 py-0.5 font-semibold tabular-nums"
+                  <span className="inline-flex items-center justify-center rounded-full text-xs font-semibold tabular-nums"
                     style={{
+                      minWidth: '1.35rem',
+                      height: '1.35rem',
+                      padding: '0 0.25rem',
                       backgroundColor: isActive ? 'rgba(255,255,255,0.22)' : 'var(--border)',
                       color:           isActive ? '#fff' : 'var(--text-muted)',
                     }}>

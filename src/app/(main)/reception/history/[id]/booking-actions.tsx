@@ -223,11 +223,11 @@ export function BookingActions({
       {/* Payment */}
       <Section title="สถานะการชำระเงิน">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-xs px-2.5 py-1 rounded-full"
-            style={{
-              backgroundColor: paymentStatus === 'paid' ? '#2E7D5E18' : '#AAA3',
-              color:           paymentStatus === 'paid' ? '#2E7D5E'   : '#AAA',
-            }}>
+          <span className="text-xs px-2.5 py-1 rounded-full font-medium"
+            style={paymentStatus === 'paid'
+              ? { backgroundColor: '#16A34A22', color: '#16A34A', border: '1px dashed #16A34A60' }
+              : { backgroundColor: '#CA8A0422', color: '#CA8A04', border: '1px dashed #CA8A0460' }
+            }>
             {paymentStatus === 'paid' ? 'ชำระแล้ว' : 'รอชำระเงิน'}
           </span>
         </div>

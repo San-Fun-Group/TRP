@@ -281,10 +281,10 @@ export default async function BookingHistoryPage({
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const color = STATUS_COLOR[status] ?? '#AAA'
+  const color = STATUS_COLOR[status] ?? '#6B7280'
   return (
     <span className="text-xs px-2 py-0.5 font-medium whitespace-nowrap rounded-full"
-      style={{ backgroundColor: `${color}18`, color }}>
+      style={{ backgroundColor: `${color}22`, color, border: `1px solid ${color}55` }}>
       {STATUS_LABEL[status] ?? status}
     </span>
   )
@@ -298,8 +298,8 @@ function PayButton({ id, paid }: { id: string; paid: boolean }) {
       <button type="submit"
         className="text-xs px-2 py-0.5 whitespace-nowrap rounded-full font-medium transition-opacity hover:opacity-70"
         style={paid
-          ? { backgroundColor: '#2E7D5E18', color: '#2E7D5E', border: '1px dashed #2E7D5E50' }
-          : { backgroundColor: '#C0392B18', color: '#C0392B', border: '1px dashed #C0392B60' }
+          ? { backgroundColor: '#16A34A22', color: '#16A34A', border: '1px dashed #16A34A60' }
+          : { backgroundColor: '#CA8A0422', color: '#CA8A04', border: '1px dashed #CA8A0460' }
         }>
         {paid ? 'ชำระแล้ว' : 'รอชำระ'}
       </button>

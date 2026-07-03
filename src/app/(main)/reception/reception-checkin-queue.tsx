@@ -57,7 +57,8 @@ export function CheckInQueue({
       ) : (
         <>
           {/* Desktop table */}
-          <div className="card hidden md:block overflow-x-auto px-5 pt-3 pb-2">
+          <div className="card hidden md:block px-5 pt-3 pb-2">
+            <div style={{ overflowX: 'auto' }}>
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -124,6 +125,7 @@ export function CheckInQueue({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Mobile cards */}
@@ -191,8 +193,8 @@ function PayToggle({ id, paid }: { id: string; paid: boolean }) {
       onClick={() => startTransition(async () => { await updatePaymentStatus(id, paid ? 'pending' : 'paid') })}
       className="text-xs px-2 py-0.5 whitespace-nowrap rounded-full font-medium transition-opacity hover:opacity-70 inline-flex items-center gap-1"
       style={paid
-        ? { backgroundColor: '#2E7D5E18', color: '#2E7D5E', border: '1px dashed #2E7D5E50' }
-        : { backgroundColor: '#C0392B18', color: '#C0392B', border: '1px dashed #C0392B60' }
+        ? { backgroundColor: '#16A34A22', color: '#16A34A', border: '1px dashed #16A34A60' }
+        : { backgroundColor: '#CA8A0422', color: '#CA8A04', border: '1px dashed #CA8A0460' }
       }>
       {paid ? 'ชำระแล้ว' : 'รอชำระ'}
       <span className="opacity-50 text-[10px]">✎</span>

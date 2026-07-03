@@ -270,13 +270,18 @@ export default function HomePms({
               {/* Status + payment */}
               <div className="flex gap-2">
                 <span className="text-xs px-2.5 py-0.5 rounded-full font-medium"
-                  style={{ backgroundColor: `${STATUS_COLOR[selected.status] ?? '#AAA'}18`, color: STATUS_COLOR[selected.status] ?? '#AAA' }}>
+                  style={{
+                    backgroundColor: `${STATUS_COLOR[selected.status] ?? '#6B7280'}22`,
+                    color: STATUS_COLOR[selected.status] ?? '#6B7280',
+                    border: `1px solid ${STATUS_COLOR[selected.status] ?? '#6B7280'}55`,
+                  }}>
                   {STATUS_LABEL[selected.status] ?? selected.status}
                 </span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full"
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-medium"
                   style={{
-                    backgroundColor: selected.payment_status === 'paid' ? '#2E7D5E18' : '#C0392B18',
-                    color: selected.payment_status === 'paid' ? '#2E7D5E' : '#C0392B',
+                    backgroundColor: selected.payment_status === 'paid' ? '#16A34A22' : '#CA8A0422',
+                    color: selected.payment_status === 'paid' ? '#16A34A' : '#CA8A04',
+                    border: `1px solid ${selected.payment_status === 'paid' ? '#16A34A60' : '#CA8A0460'}`,
                   }}>
                   {selected.payment_status === 'paid' ? 'ชำระแล้ว' : 'ค้างชำระ'}
                 </span>

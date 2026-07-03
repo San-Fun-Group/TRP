@@ -76,19 +76,20 @@ export function RoomBoard({
 function VacantCard({ roomName }: { roomName: string }) {
   return (
     <div className="card overflow-hidden"
-      style={{ borderLeft: '4px solid var(--border)', background: 'var(--surface)' }}>
-      <div className="px-5 py-3 flex items-end gap-4">
+      style={{ borderLeft: '4px solid #16A34A55', background: 'var(--surface)' }}>
+      <div className="px-5 py-2.5 flex items-center gap-3">
         <span style={{
           fontFamily: 'var(--font-cormorant, serif)',
-          fontSize: '4rem', fontWeight: 400, lineHeight: 1,
+          fontSize: '2.4rem', fontWeight: 400, lineHeight: 1,
           color: 'var(--text-light)',
-          marginTop: '-0.15em',
+          marginTop: '-0.1em',
         }}>
           {roomName}
         </span>
-        <div className="mb-1">
-          <p className="text-xs font-medium tracking-widest uppercase" style={{ color: 'var(--text-light)' }}>ว่าง</p>
-        </div>
+        <span className="text-xs font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full"
+          style={{ backgroundColor: '#16A34A18', color: '#16A34A', border: '1px solid #16A34A40' }}>
+          ว่าง
+        </span>
       </div>
     </div>
   )
@@ -157,8 +158,8 @@ function OccupiedCard({ roomName, booking }: { roomName: string; booking: InHous
           <button type="button" disabled={isPending} onClick={togglePay}
             className="px-4 py-1.5 text-xs font-medium rounded-full transition-opacity hover:opacity-80 disabled:opacity-40"
             style={paid
-              ? { backgroundColor: '#2E7D5E', color: '#fff' }
-              : { backgroundColor: 'var(--mauve)', color: '#fff' }
+              ? { backgroundColor: '#16A34A22', color: '#16A34A', border: '1px dashed #16A34A60' }
+              : { backgroundColor: '#CA8A0422', color: '#CA8A04', border: '1px dashed #CA8A0460' }
             }>
             {paid ? 'ชำระแล้ว' : 'ชำระเงิน'}
           </button>
