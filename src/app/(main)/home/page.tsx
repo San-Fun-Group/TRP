@@ -192,9 +192,10 @@ const occByRoom: Record<string, { guest_name: string; checkout_date: string; lea
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const color = STATUS_COLOR[status] ?? '#6B7280'
   return (
     <span className="text-xs px-2 py-0.5 font-medium whitespace-nowrap rounded-full"
-      style={{ backgroundColor: `${STATUS_COLOR[status] ?? '#AAA'}18`, color: STATUS_COLOR[status] ?? '#AAA' }}>
+      style={{ backgroundColor: `${color}22`, color, border: `1px solid ${color}55` }}>
       {STATUS_LABEL[status] ?? status}
     </span>
   )
@@ -202,8 +203,11 @@ function StatusBadge({ status }: { status: string }) {
 
 function PayBadge({ paid }: { paid: boolean }) {
   return (
-    <span className="text-xs px-2 py-0.5 whitespace-nowrap rounded-full"
-      style={{ backgroundColor: paid ? '#2E7D5E18' : '#AAA3', color: paid ? '#2E7D5E' : '#AAA' }}>
+    <span className="text-xs px-2 py-0.5 font-medium whitespace-nowrap rounded-full"
+      style={paid
+        ? { backgroundColor: '#16A34A22', color: '#16A34A', border: '1px dashed #16A34A60' }
+        : { backgroundColor: '#CA8A0422', color: '#CA8A04', border: '1px dashed #CA8A0460' }
+      }>
       {paid ? 'ชำระแล้ว' : 'รอชำระ'}
     </span>
   )

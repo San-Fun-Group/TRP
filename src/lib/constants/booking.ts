@@ -7,9 +7,9 @@ export const STATUS_LABEL: Record<string, string> = {
 }
 
 export const STATUS_COLOR: Record<string, string> = {
-  new:         '#8475BB',
+  new:         '#CA8A04',
   confirmed:   '#2E7D5E',
-  checked_in:  '#C4A26A',
-  checked_out: '#AAA',
+  checked_in:  '#16A34A',
+  checked_out: '#6B7280',
   cancelled:   '#C0392B',
 }
